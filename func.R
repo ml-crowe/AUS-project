@@ -1,3 +1,15 @@
+##### Function to automatically load packages i use regularly ######
+.First <- function(x){
+  library(MASS)
+  library(tidyverse)
+  library(magrittr)
+  library(Hmisc)
+  library(psych)
+  library(jtools)
+  library(readr)
+  library(here)
+}
+
 ####mean.n function####
 #similar to mean.n in SPSS
 #can generate scale means that are a little more lenient with NAs
@@ -282,16 +294,6 @@ read.excel <- function(header=TRUE,...) {
 #after copying to clipboard
 # df <- read.excel()
 
-##### Function to automatically load packages i use regularly ######
-.First <- function(x){
-  library(MASS)
-  library(tidyverse)
-  library(magrittr)
-  library(Hmisc)
-  library(psych)
-  library(jtools)
-}
-
 ##### calculate size of correlation necessary to reach particular level of significance ######
 
 r.crit <- function(tails = 2, p = .01, n){
@@ -319,34 +321,43 @@ remove.missing.rows <- function(df){
 ###### read a .csv downloaded from qualtrics ###########
 #found the base of this function online
 
-read.qualtrics.csv <- function(filename, stringsAsFactors = FALSE, debrief = FALSE, ...) {
-  n <- read.csv(filename, nrows = 1, stringsAsFactors = FALSE)
-  dat <- read.csv(filename, header = FALSE, skip = 2, stringsAsFactors = stringsAsFactors, ...)
+read.qualtrics.csv <- function(filename) {
+  require(readr)
+  n <- read.csv(filename, nrows = 1)
+  dat <- read_csv(filename, col_names = FALSE, skip = 3)
   names(dat) <- names(n)
-  names(dat)[1:10] <- n[1,1:10]
   for(i in seq_along(dat)) {
     attr(dat[,i], "question") <- n[1,i]
   }
-  dat <- select(dat, -c(ResponseID,
-                        ResponseSet,
-                        Name,
-                        ExternalDataReference,
-                        EmailAddress,
+  dat <- select(dat, -c(ResponseId,
+                        RecipientLastName,
+                        RecipientFirstName,
+                        RecipientEmail,
+                        ExternalReference,
                         IPAddress,
                         Status,
-                        Finished,
                         LocationLatitude,
                         LocationLongitude,
-                        LocationAccuracy,
-                        X))
-  if(debrief == TRUE){
-    dat <- dat[-c(which(dat$debrief == 2)),]
-  }
-  dat$StartDate <- strptime(dat$StartDate,format = '%Y-%m-%d %H:%M:%S')
-  dat$EndDate <- strptime(dat$EndDate,format = '%Y-%m-%d %H:%M:%S')
-  time <- difftime(dat$EndDate,dat$StartDate, units = 'mins')
-  participant <- 1:nrow(dat)
-  dat <- data.frame('participant' = participant, 'start' = dat$StartDate, 'finish' = dat$EndDate, 'time.minutes' = time, select(dat, -c(StartDate,EndDate)))
+                        DistributionChannel,
+                        UserLanguage))
+  dat$StartDate <- strptime(dat$StartDate,format = '%m/%d/%y %H:%M')
+  dat$EndDate <- strptime(dat$EndDate,format = '%m/%d/%y %H:%M')
+  dat$RecordedDate <- strptime(dat$RecordedDate,format = '%m/%d/%y %H:%M')
+  dat <- rename(dat, duration = Duration..in.seconds., workerID = dem)
+  dat <- mutate(dat, participant = 1:nrow(dat))
+  dat <- select(dat, participant, everything())
+  dat
+}
+
+###### read a .csv downloaded from Mturk ###########
+read.mturk.csv <- function(filename) {
+  require(readr)
+  dat <- read_csv(filename)
+  dat <- select(dat, c(AssignmentId, WorkerId, AcceptTime, SubmitTime, WorkTimeInSeconds, Answer.surveycode, Approve, Reject))
+  dat$AcceptTime <- strptime(dat$AcceptTime,format = '%a %b %d %T', tz = 'America/Los_Angeles')
+  dat$SubmitTime <- strptime(dat$SubmitTime,format = '%a %b %d %T', tz = 'America/Los_Angeles')
+  dat <- rename(dat, duration = WorkTimeInSeconds)
+  dat <- rename(dat, code = Answer.surveycode)
   dat
 }
 
