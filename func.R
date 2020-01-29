@@ -318,6 +318,9 @@ remove.missing.rows <- function(df){
   list(df = new.df, old.df = df, missing.rows = all.missing.rows)
 }
 
+#### trim leading and trailing spaces from character vectors ######
+trim <- function (x) gsub("^\\s+|\\s+$", "", x)
+
 ###### read a .csv downloaded from qualtrics ###########
 #found the base of this function online
 
@@ -343,7 +346,8 @@ read.qualtrics.csv <- function(filename) {
   dat$StartDate <- strptime(dat$StartDate,format = '%m/%d/%y %H:%M')
   dat$EndDate <- strptime(dat$EndDate,format = '%m/%d/%y %H:%M')
   dat$RecordedDate <- strptime(dat$RecordedDate,format = '%m/%d/%y %H:%M')
-  dat <- rename(dat, duration = Duration..in.seconds., workerID = dem)
+  dat <- rename(dat, duration = Duration..in.seconds., WorkerId = dem, code = Random.ID)
+  dat$WorkerId <- trim(dat$WorkerId)
   dat <- mutate(dat, participant = 1:nrow(dat))
   dat <- select(dat, participant, everything())
   dat
@@ -354,6 +358,7 @@ read.mturk.csv <- function(filename) {
   require(readr)
   dat <- read_csv(filename)
   dat <- select(dat, c(AssignmentId, WorkerId, AcceptTime, SubmitTime, WorkTimeInSeconds, Answer.surveycode, Approve, Reject))
+  dat$WorkerId <- trim(dat$WorkerId)
   dat$AcceptTime <- strptime(dat$AcceptTime,format = '%a %b %d %T', tz = 'America/Los_Angeles')
   dat$SubmitTime <- strptime(dat$SubmitTime,format = '%a %b %d %T', tz = 'America/Los_Angeles')
   dat <- rename(dat, duration = WorkTimeInSeconds)
