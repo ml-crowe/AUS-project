@@ -2,7 +2,7 @@
 #AUS development project
 
 # where I left off --------------------------------------------------------
-# working on cleaning and validating
+# cleaning syntax, rejecting people who had too many NAs
 
 # current problems requiring resolution -----------------------------------
 

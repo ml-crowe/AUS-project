@@ -63,20 +63,21 @@ df$invalid[df$duration<=length(select(df,WorkerId:virtue_8))] <- 1
 # Identify participants that should be rejected/approved -------
 # possible helpful link:
 # https://mysite.ku.edu.tr/swithrow/2015/02/13/automating-the-accept-and-reject-process-in-mturk-with-r/
-mturk$reason <- NA
+
 #Identify people whose ID's are not in the survey and reject them
 bad.id <- !(mturk$WorkerId %in% intersect(df$WorkerId, mturk$WorkerId))
-mturk$Reject[bad.id] <- 1
-mturk$reason[bad.id] <- "Your Worker ID was not found in the survey. As such, your survey key code could not be authenticated."
+mturk$Reject[bad.id] <- "Your Worker ID was not found in the survey. Your survey key code could not be authenticated."
 
-#Reject people that don't have a matching survey code.
+#Reject people that don't have a matching ID and survey code set.
 wrong.code <- !(mturk$WorkerId %in% intersect(select(df, WorkerId, code),select(mturk,WorkerId,code))$WorkerId)
-mturk$Reject[wrong.code] <-1
-mturk$reason[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
+mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
 
-
-
-
+#identify responders who have a matching MTurk worker ID
+attention.check <- mturk$WorkerId %in% (select(df, -c(StartDate, EndDate, RecordedDate)) %>% 
+  filter(WorkerId %in% mturk$WorkerId) %>% 
+  filter(virtue>2|infreq>3) %>% 
+  select(WorkerId))$WorkerId
+mturk$Reject[attention.check] <- "The survey submitted contains more than an acceptable minimum number of failed attention checks and is not considered a completed HIT."
 
 
 
