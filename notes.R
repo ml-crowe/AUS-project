@@ -4,6 +4,7 @@
 # where I left off --------------------------------------------------------
 # finished syntax for identifying people that should be rejected
 # need to work on data coding now
+# Reject people that don't complete at least 50% 
 
 # current problems requiring resolution -----------------------------------
 
