@@ -2,7 +2,8 @@
 #AUS development project
 
 # where I left off --------------------------------------------------------
-# cleaning syntax, rejecting people who had too many NAs
+# finished syntax for identifying people that should be rejected
+# need to work on data coding now
 
 # current problems requiring resolution -----------------------------------
 
@@ -14,4 +15,8 @@
 
 # 1/29/20
 # Generate syntax for identifying participants that should be rejected
+# 
+
+# 1/30/20
+# coding for Mturk reject
 # 

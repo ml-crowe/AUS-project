@@ -72,56 +72,21 @@ mturk$Reject[bad.id] <- "Your Worker ID was not found in the survey. Your survey
 wrong.code <- !(mturk$WorkerId %in% intersect(select(df, WorkerId, code),select(mturk,WorkerId,code))$WorkerId)
 mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
 
-#identify responders who have a matching MTurk worker ID
-attention.check <- mturk$WorkerId %in% (select(df, -c(StartDate, EndDate, RecordedDate)) %>% 
-  filter(WorkerId %in% mturk$WorkerId) %>% 
+#identify responders who failed attention checks
+attention.check <- mturk$WorkerId %in% 
+  (select(df, c(WorkerId, virtue, infreq)) %>% 
   filter(virtue>2|infreq>3) %>% 
   select(WorkerId))$WorkerId
 mturk$Reject[attention.check] <- "The survey submitted contains more than an acceptable minimum number of failed attention checks and is not considered a completed HIT."
 
-
-
 #Reject people that have too many NAs
-survey$numNA [acceptablena] <- "The survey submitted contains more than an acceptable minimum number of missing values and is not considered a completed HIT. Sorry."
-
-#Reject people that failed the attention check items.
-survey.attncheck <- tbl_df(data.frame(score.multiple.choice(attncheck.correct, survey[attncheck], score = FALSE)))
-survey$attntotal [attnfail] <- "The survey submitted contains more than an acceptable minimum number of failed attention checks and is not considered a completed HIT. Sorry."
-
-#Create a smaller dataset containing the rejected people from the survey
-survey.reject %
-select(Reject, WorkerId)
-
-#Merge the datasets
-merged <- merge(mturk, survey.reject, by="WorkerId", all.x = TRUE)
-
-#Merge the reject columns
-merged <- within(merged, {
-  Reject <- rep(NA, nrow(merged))
-  ifelse (is.na(Reject.x), Reject <- Reject.y, Reject <- Reject.x)
-})
+#length(select(df,WorkerId:virtue_8))/4 = 25% of items
+excess.na <- mturk$WorkerId %in% 
+  (select(df, WorkerId:virtue_8) %>% 
+     apply(1, function(z) sum(is.na(z))) %>% 
+     is_weakly_greater_than(90.25) %>% 
+     df$WorkerId[.])
+mturk$Reject[excess.na] <- "The survey submitted contains more than an acceptable minimum number of missing values and is not considered a completed HIT. Sorry."
 
 #Approve everyone that didn't get rejected
-merged$Approve[is.na(merged$Reject)] <- "x"
-
-#Drop the extra columns
-merged <- select(merged, -(Reject.x), -(Reject.y))
-
-#Rejected Participants
-Rejected % select(WorkerId, Reject, Answer.surveycode, AssignmentId)
-
-#Approved Participants
-Approved % select(WorkerId, AssignmentId)
-
-#Save as a csv for uploading to mturk
-write.csv(merged, file = “Upload_Mturk.csv”, row.names = FALSE, na = “”)
-
-#Save a rejected csv for double checking
-write.csv(Rejected, file = “Rejected_Participants.csv”, row.names = FALSE, na = “”)
-
-#Save an approved csv
-write.csv(Approved, file = “Approved_Participants.csv”, row.names = FALSE, na = “”)
-
-# Identify individuals in df that don't provide Worker ID matching that from Amazon
-# This isn't really necessary for approval concerns
-setdiff(select(df, WorkerId, code),select(mturk,WorkerId,code)) 
+mturk$Approve[is.na(mturk$Reject)] <- "x"
