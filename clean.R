@@ -73,18 +73,18 @@ wrong.code <- !(mturk$WorkerId %in% intersect(select(df, WorkerId, code),select(
 mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
 
 #identify responders who failed attention checks
-attention.check <- mturk$WorkerId %in% 
-  (select(df, c(WorkerId, virtue, infreq)) %>% 
-  filter(virtue>2|infreq>3) %>% 
-  select(WorkerId))$WorkerId
-mturk$Reject[attention.check] <- "The survey submitted contains more than an acceptable minimum number of failed attention checks and is not considered a completed HIT."
+#attention.check <- mturk$WorkerId %in% 
+#  (select(df, c(WorkerId, virtue, infreq)) %>% 
+#  filter(virtue>2|infreq>3) %>% 
+#  select(WorkerId))$WorkerId
+#mturk$Reject[attention.check] <- "The survey submitted contains more than an acceptable minimum number of failed attention checks and is not considered a completed HIT."
 
 #Reject people that have too many NAs
-#length(select(df,WorkerId:virtue_8))/4 = 25% of items
+#length(select(df,WorkerId:virtue_8))/2 = 50% of items
 excess.na <- mturk$WorkerId %in% 
   (select(df, WorkerId:virtue_8) %>% 
      apply(1, function(z) sum(is.na(z))) %>% 
-     is_weakly_greater_than(90.25) %>% 
+     is_weakly_greater_than(180.5) %>% 
      df$WorkerId[.])
 mturk$Reject[excess.na] <- "The survey submitted contains more than an acceptable minimum number of missing values and is not considered a completed HIT. Sorry."
 
