@@ -1,5 +1,5 @@
 
-# Score Validation items ----
+# 1. Score Validation items ----
 
 #### Virtue Scale ####
 df[paste('r_virtue_',1:8,sep = '')]<-NA
@@ -90,3 +90,78 @@ mturk$Reject[excess.na] <- "The survey submitted contains more than an acceptabl
 
 #Approve everyone that didn't get rejected
 mturk$Approve[is.na(mturk$Reject)] <- "x"
+
+#### 2. Reverse Coding and Scale Scores -------------------
+
+#___2.1 NEO ---------------
+df[paste('r_neo_',1:60, sep='')] <- df[paste('neo_',1:60, sep='')]
+
+df[paste('r_neo_',
+         c(9,18,19,23,24,30,34,36,37,38,39,40,42,43,44,45,46,48,49,50,51,53,54,55,56,58,59,60)
+         ,sep = '')]<-6-df[paste('neo_',
+                                 c(9,18,19,23,24,30,34,36,37,38,39,40,42,43,44,45,46,48,49,50,51,53,54,55,56,58,59,60)
+                                 ,sep = '')]
+
+df$n_anxiety 		<- rowMeans(df[paste('r_neo_',	c(1, 31),sep = '')])
+df$n_anger 			<- rowMeans(df[paste('r_neo_',	c(6, 36),sep = '')])
+df$n_depression 	<- rowMeans(df[paste('r_neo_',	c(11,41),sep = '')])
+df$n_self_con 		<- rowMeans(df[paste('r_neo_',	c(16,46),sep = '')])
+df$n_immoderation 	<- rowMeans(df[paste('r_neo_',	c(21,51),sep = '')])
+df$n_vulnerability 	<- rowMeans(df[paste('r_neo_',	c(26,56),sep = '')])
+
+df$e_friendliness 	<- rowMeans(df[paste('r_neo_',	c(2,32),sep = '')])
+df$e_gregariousness <- rowMeans(df[paste('r_neo_',	c(7,37),sep = '')])
+df$e_assertiveness 	<- rowMeans(df[paste('r_neo_',	c(12,42),sep = '')])
+df$e_activity 		<- rowMeans(df[paste('r_neo_',	c(17,47),sep = '')])
+df$e_excite_seek 	<- rowMeans(df[paste('r_neo_',	c(22,52),sep = '')])
+df$e_cheerfulness 	<- rowMeans(df[paste('r_neo_',	c(27,57),sep = '')])
+
+df$o_imagination 		<- rowMeans(df[paste('r_neo_',	c(3,33),sep = '')])
+df$o_artistic_int 		<- rowMeans(df[paste('r_neo_',	c(8,38),sep = '')])
+df$o_emotionality 		<- rowMeans(df[paste('r_neo_',	c(13,43),sep = '')])
+df$o_adventurousness 	<- rowMeans(df[paste('r_neo_',	c(18,48),sep = '')])
+df$o_intellect 			<- rowMeans(df[paste('r_neo_',	c(23,53),sep = '')])
+df$o_liberalism 		<- rowMeans(df[paste('r_neo_',	c(28,58),sep = '')])
+
+df$a_trust 			<- rowMeans(df[paste('r_neo_',	c(4,34),sep = '')])
+df$a_morality 		<- rowMeans(df[paste('r_neo_',	c(9,39),sep = '')])
+df$a_altruism 		<- rowMeans(df[paste('r_neo_',	c(14,44),sep = '')])
+df$a_cooperation 	<- rowMeans(df[paste('r_neo_',	c(19,49),sep = '')])
+df$a_modesty 		<- rowMeans(df[paste('r_neo_',	c(24,54),sep = '')])
+df$a_sympathy 		<- rowMeans(df[paste('r_neo_',	c(29,59),sep = '')])
+
+df$c_self_efficacy 	<- rowMeans(df[paste('r_neo_',	c(5,35),sep = '')])
+df$c_orderliness 			<- rowMeans(df[paste('r_neo_',	c(10,40),sep = '')])
+df$c_dutifulness 			<- rowMeans(df[paste('r_neo_',	c(15,45),sep = '')])
+df$c_achieve_striv <- rowMeans(df[paste('r_neo_',	c(20,50),sep = '')])
+df$c_self_discipline 	<- rowMeans(df[paste('r_neo_',	c(25,55),sep = '')])
+df$c_cautiousness 			<- rowMeans(df[paste('r_neo_',	c(30,60),sep = '')])
+
+df$n <- mean.n(df[,paste('r_neo_',c(1+(5*0:11)), sep = '')], 2)
+df$e <- mean.n(df[,paste('r_neo_',c(2+(5*0:11)), sep = '')], 2)
+df$o <- mean.n(df[,paste('r_neo_',c(3+(5*0:11)), sep = '')], 2)
+df$a <- mean.n(df[,paste('r_neo_',c(4+(5*0:11)), sep = '')], 2)
+df$c <- mean.n(df[,paste('r_neo_',c(5+(5*0:11)), sep = '')], 2)
+
+#___2.2 ari - Affective Reactivity Index ---------------
+df$ari <- rowMeans(df[paste('ari_',1:7,sep='')])
+
+#___2.3 aus - Anger Upregulation Scale ---------------
+# not currently scored
+# variable names aus_1:aus_60
+
+#___2.4 ******** amii - Angry Mood Improvement Inventory ---------------
+
+#___2.5 bisbas - BIS/BAS ---------------
+
+df[paste('r_bisbas_',1:24, sep='')] <- df[paste('bisbas_',1:24, sep='')]
+
+df[paste('r_bisbas_',c(2,22),sep = '')]<-5-df[paste('bisbas_',c(2,22),sep = '')]
+
+df$bis <- rowMeans(df[paste('r_bisbas_',c(2,8,13,16,19,22,24),sep='')])
+df$bas <- rowMeans(df[paste('r_bisbas_',c(3,4,5,7,9,10,12,14,15,18,20,21,23),sep='')])
+df$bas_drive <- rowMeans(df[paste('r_bisbas_',c(3,9,12,21),sep='')])
+df$bas_funseek <- rowMeans(df[paste('r_bisbas_',c(5,10,15,20),sep='')])
+df$bas_reward <- rowMeans(df[paste('r_bisbas_',c(4,7,14,18,23),sep='')])
+
+
