@@ -64,13 +64,22 @@ df$invalid[df$duration<=length(select(df,WorkerId:virtue_8))] <- 1
 # possible helpful link:
 # https://mysite.ku.edu.tr/swithrow/2015/02/13/automating-the-accept-and-reject-process-in-mturk-with-r/
 
-#Identify people whose ID's are not in the survey and reject them
-bad.id <- !(mturk$WorkerId %in% intersect(df$WorkerId, mturk$WorkerId))
-mturk$Reject[bad.id] <- "Your Worker ID was not found in the survey. Your survey key code could not be authenticated."
+#Reject people that have too many NAs
+#length(select(df,WorkerId:virtue_8))/2 = 50% of items
+excess.na <- mturk$WorkerId %in% 
+  (select(df, WorkerId:virtue_8) %>% 
+     apply(1, function(z) sum(is.na(z))) %>% 
+     is_weakly_greater_than(180.5) %>% 
+     df$WorkerId[.])
+mturk$Reject[excess.na] <- "The survey submitted is missing more than half of all responses and is not considered a completed HIT."
 
 #Reject people that don't have a matching ID and survey code set.
 wrong.code <- !(mturk$WorkerId %in% intersect(select(df, WorkerId, code),select(mturk,WorkerId,code))$WorkerId)
 mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
+
+#Identify people whose ID's are not in the survey and reject them
+bad.id <- !(mturk$WorkerId %in% intersect(df$WorkerId, mturk$WorkerId))
+mturk$Reject[bad.id] <- "Your Worker ID was not found in the survey. Your survey code could not be authenticated."
 
 #identify responders who failed attention checks
 #attention.check <- mturk$WorkerId %in% 
@@ -79,17 +88,37 @@ mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match 
 #  select(WorkerId))$WorkerId
 #mturk$Reject[attention.check] <- "The survey submitted contains more than an acceptable minimum number of failed attention checks and is not considered a completed HIT."
 
-#Reject people that have too many NAs
-#length(select(df,WorkerId:virtue_8))/2 = 50% of items
-excess.na <- mturk$WorkerId %in% 
-  (select(df, WorkerId:virtue_8) %>% 
-     apply(1, function(z) sum(is.na(z))) %>% 
-     is_weakly_greater_than(180.5) %>% 
-     df$WorkerId[.])
-mturk$Reject[excess.na] <- "The survey submitted contains more than an acceptable minimum number of missing values and is not considered a completed HIT. Sorry."
-
 #Approve everyone that didn't get rejected
 mturk$Approve[is.na(mturk$Reject)] <- "x"
+
+#write.excel(mturk)
+
+# completed visual inspection of the 10 rejected responses 
+df$WorkerId[which(df$code == 972295)] #clear typo for worker ID
+mturk$Reject[mturk$code == 972295] <- NA
+mturk$Approve[mturk$code == 972295] <- 'x'
+
+df$WorkerId[which(df$code == 218539)] #clear typo for worker ID
+mturk$Reject[mturk$code == 218539] <- NA
+mturk$Approve[mturk$code == 218539] <- 'x'
+
+df$WorkerId[which(df$code == 270535)] #clear typo for worker ID
+mturk$Reject[mturk$code == 270535] <- NA
+mturk$Approve[mturk$code == 270535] <- 'x'
+
+#df$invalid[which(df$code == 208683)] #did not provide worker Id, but data seems valid
+
+df[which(df$code == 607919),] #syntax says this person is missing too much data, visual inspection looks fine - worker Id is present twice - first participant did not complete most of it - this attempt looks fine
+mturk$Reject[mturk$code == 607919] <- NA
+mturk$Approve[mturk$code == 607919] <- 'x'
+
+duplicates <- df$WorkerId[!is.na(df$WorkerId)] %>% duplicated()
+df$WorkerId[duplicates]
+
+mturk$Reject[which(mturk$WorkerId %in% df$WorkerId[duplicates])]
+#all other duplicates are fine
+
+write.excel(mturk)
 
 #### 2. Reverse Coding and Scale Scores -------------------
 

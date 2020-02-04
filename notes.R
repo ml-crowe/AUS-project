@@ -3,12 +3,10 @@
 
 # where I left off --------------------------------------------------------
 # coding PROMIS Anger scale
+# Double checking rejected HITs
 
 # current problems requiring resolution -----------------------------------
 
-# Worker codes requiring attention
-# A3MJCHFORYK0US reported she timed out, code = 796471
-# A1E8PIR82KIJEP; code = 809268
 
 
 ## 1/28/20 
