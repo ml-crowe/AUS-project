@@ -150,12 +150,14 @@ df$ari <- rowMeans(df[paste('ari_',1:7,sep='')])
 # not currently scored
 # variable names aus_1:aus_60
 
-#___2.4 ******** amii - Angry Mood Improvement Inventory ---------------
+#___2.4 amii - Angry Mood Improvement Inventory ---------------
+df$amii_control <- rowMeans(df[paste('amii_',	c(1,4,8,11,15,18,20,24),sep = '')])
+df$amii_in <- rowMeans(df[paste('amii_',	c(3,	5,	6,	10,	13,	16,	17,	21),sep = '')])
+df$amii_out <- rowMeans(df[paste('amii_',	c(2,	7,	9,	12,	14,	19,	22,	23),sep = '')])
 
 #___2.5 bisbas - BIS/BAS ---------------
 
 df[paste('r_bisbas_',1:24, sep='')] <- df[paste('bisbas_',1:24, sep='')]
-
 df[paste('r_bisbas_',c(2,22),sep = '')]<-5-df[paste('bisbas_',c(2,22),sep = '')]
 
 df$bis <- rowMeans(df[paste('r_bisbas_',c(2,8,13,16,19,22,24),sep='')])
@@ -163,5 +165,34 @@ df$bas <- rowMeans(df[paste('r_bisbas_',c(3,4,5,7,9,10,12,14,15,18,20,21,23),sep
 df$bas_drive <- rowMeans(df[paste('r_bisbas_',c(3,9,12,21),sep='')])
 df$bas_funseek <- rowMeans(df[paste('r_bisbas_',c(5,10,15,20),sep='')])
 df$bas_reward <- rowMeans(df[paste('r_bisbas_',c(4,7,14,18,23),sep='')])
+
+#___2.6 bam - Brief Agitation Measure ---------------
+df$bam <- rowMeans(df[paste('bam_',c(1,2,3),sep='')])
+
+#___2.7 bite - Brief Irritability Test ---------------
+df$bite <- rowMeans(df[paste('bite_',c(1,2,3,4,5),sep='')])
+
+#___2.8 cesd - CES-D ---------------
+df[paste('r_cesd_',1:20, sep='')] <- (df[paste('cesd_',1:20, sep='')]-1)
+df[paste('r_cesd_',c(4,8,12,16),sep = '')]<-3-df[paste('r_cesd_',c(4,8,12,16),sep = '')]
+df$cesd <- rowMeans(df[paste('r_cesd_',1:20,sep='')])
+
+#___2.9 cars - Child Anger Rumination Scale ---------------
+df$cars <- rowMeans(df[paste('cars_',1:19,sep='')])
+
+#___2.10 crrs - Child Ruminative Response Scale ---------------
+df$crrs <- rowMeans(df[paste('crrs_',1:13,sep='')])
+
+#___2.11 meaq - Experiential Avoidance ---------------
+df$meaq_behav <- rowMeans(df[paste('meaq_',c(1,	4,	6,	8,	10,	12,	15,	17,	19,	21,	23),sep='')])
+df$meaq_distress <- rowMeans(df[paste('meaq_',c(2,	3,	5,	7,	9,	11,	13,	14,	16,	18,	20,	22,	24),sep='')])
+
+#___2.12 promis.a - PROMIS Anger ---------------
+
+#___2.13 rpa - Reactive and Proactive Aggression ---------------
+
+#___2.14 r.pos.aff - Responses to Positive Affect ---------------
+
+#___2.15 supps - Short UPPS ---------------
 
 
