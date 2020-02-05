@@ -73,13 +73,13 @@ excess.na <- mturk$WorkerId %in%
      df$WorkerId[.])
 mturk$Reject[excess.na] <- "The survey submitted is missing more than half of all responses and is not considered a completed HIT."
 
-#Reject people that don't have a matching ID and survey code set.
-wrong.code <- !(mturk$WorkerId %in% intersect(select(df, WorkerId, code),select(mturk,WorkerId,code))$WorkerId)
-mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
-
 #Identify people whose ID's are not in the survey and reject them
 bad.id <- !(mturk$WorkerId %in% intersect(df$WorkerId, mturk$WorkerId))
 mturk$Reject[bad.id] <- "Your Worker ID was not found in the survey. Your survey code could not be authenticated."
+
+#Reject people that don't have a matching ID and survey code set.
+wrong.code <- !(mturk$WorkerId %in% intersect(select(df, WorkerId, code),select(mturk,WorkerId,code))$WorkerId)
+mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
 
 #identify responders who failed attention checks
 #attention.check <- mturk$WorkerId %in% 
@@ -106,19 +106,32 @@ df$WorkerId[which(df$code == 270535)] #clear typo for worker ID
 mturk$Reject[mturk$code == 270535] <- NA
 mturk$Approve[mturk$code == 270535] <- 'x'
 
-#df$invalid[which(df$code == 208683)] #did not provide worker Id, but data seems valid
-
-df[which(df$code == 607919),] #syntax says this person is missing too much data, visual inspection looks fine - worker Id is present twice - first participant did not complete most of it - this attempt looks fine
+df[which(df$code == 607919),] #syntax says this person is missing too much data, visual inspection looks fine - worker Id is present twice - did not complete most of it the first time - this attempt looks fine
 mturk$Reject[mturk$code == 607919] <- NA
 mturk$Approve[mturk$code == 607919] <- 'x'
 
-duplicates <- df$WorkerId[!is.na(df$WorkerId)] %>% duplicated()
-df$WorkerId[duplicates]
+mturk$Reject[mturk$code == 476986] <- NA #Worker ID is in the data twice, the attempt associated with this code is good
+mturk$Approve[mturk$code == 476986] <- 'x'
 
-mturk$Reject[which(mturk$WorkerId %in% df$WorkerId[duplicates])]
-#all other duplicates are fine
+duplicates <- df$WorkerId[!is.na(df$WorkerId)] %>% 
+  duplicated %>% 
+  df$WorkerId[!is.na(df$WorkerId)][.]
 
-write.excel(mturk)
+mturk$Reject[mturk$WorkerId %in% duplicates] #all other duplicates are accepted
+
+df$WorkerId[which(df$code == 590032)] #clear typo for worker ID
+mturk$Reject[mturk$code == 590032] <- NA
+mturk$Approve[mturk$code == 590032] <- 'x'
+
+df$invalid[which(df$code == 208683)] #did not provide worker Id, but data seems valid
+mturk$Reject[mturk$code == 208683] <- NA
+mturk$Approve[mturk$code == 208683] <- 'x'
+
+write.excel(select(mturk, c(Approve, Reject)), row.names = F, col.names = F)
+
+
+
+
 
 #### 2. Reverse Coding and Scale Scores -------------------
 

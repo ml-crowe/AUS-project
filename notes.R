@@ -2,12 +2,11 @@
 # AUS development project
 
 # where I left off --------------------------------------------------------
+# Need to remove duplicate Worker IDs from the dataset
 # coding PROMIS Anger scale
-# Double checking rejected HITs
+# 
 
 # current problems requiring resolution -----------------------------------
-
-
 
 ## 1/28/20 
 # worked on cleaning data
@@ -21,3 +20,6 @@
 ## 1/30/20
 # coding for Mturk reject
 # 
+
+#2/4/20
+# identifying participants that should be rejected
