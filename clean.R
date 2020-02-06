@@ -78,7 +78,9 @@ bad.id <- !(mturk$WorkerId %in% intersect(df$WorkerId, mturk$WorkerId))
 mturk$Reject[bad.id] <- "Your Worker ID was not found in the survey. Your survey code could not be authenticated."
 
 #Reject people that don't have a matching ID and survey code set.
-wrong.code <- !(mturk$WorkerId %in% intersect(select(df, WorkerId, code),select(mturk,WorkerId,code))$WorkerId)
+#was working, stopped working, added dplyr:: and it works again
+#don't understand
+wrong.code <- !(mturk$WorkerId %in% dplyr::intersect(select(df, WorkerId, code),select(mturk,WorkerId,code))$WorkerId)
 mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
 
 #identify responders who failed attention checks
@@ -91,49 +93,77 @@ mturk$Reject[wrong.code] <- "The survey code entered into the HIT did not match 
 #Approve everyone that didn't get rejected
 mturk$Approve[is.na(mturk$Reject)] <- "x"
 
-#write.excel(mturk)
-
 # completed visual inspection of the 10 rejected responses 
-df$WorkerId[which(df$code == 972295)] #clear typo for worker ID
+#df$WorkerId[which(df$code == 972295)] #clear typo for worker ID
 mturk$Reject[mturk$code == 972295] <- NA
 mturk$Approve[mturk$code == 972295] <- 'x'
 
-df$WorkerId[which(df$code == 218539)] #clear typo for worker ID
+#df$WorkerId[which(df$code == 218539)] #clear typo for worker ID
 mturk$Reject[mturk$code == 218539] <- NA
 mturk$Approve[mturk$code == 218539] <- 'x'
 
-df$WorkerId[which(df$code == 270535)] #clear typo for worker ID
+#df$WorkerId[which(df$code == 270535)] #clear typo for worker ID
 mturk$Reject[mturk$code == 270535] <- NA
 mturk$Approve[mturk$code == 270535] <- 'x'
 
-df[which(df$code == 607919),] #syntax says this person is missing too much data, visual inspection looks fine - worker Id is present twice - did not complete most of it the first time - this attempt looks fine
+#df[which(df$code == 607919),] #syntax says this person is missing too much data, visual inspection looks fine - worker Id is present twice - did not complete most of it the first time - this attempt looks fine
 mturk$Reject[mturk$code == 607919] <- NA
 mturk$Approve[mturk$code == 607919] <- 'x'
 
-mturk$Reject[mturk$code == 476986] <- NA #Worker ID is in the data twice, the attempt associated with this code is good
+# Following Worker ID is in the data twice, the attempt associated with this code is good
+mturk$Reject[mturk$code == 476986] <- NA 
 mturk$Approve[mturk$code == 476986] <- 'x'
 
 duplicates <- df$WorkerId[!is.na(df$WorkerId)] %>% 
   duplicated %>% 
   df$WorkerId[!is.na(df$WorkerId)][.]
 
-mturk$Reject[mturk$WorkerId %in% duplicates] #all other duplicates are accepted
+#mturk$Reject[mturk$WorkerId %in% duplicates] #all other duplicates are accepted
 
-df$WorkerId[which(df$code == 590032)] #clear typo for worker ID
+#df$WorkerId[which(df$code == 590032)] #clear typo for worker ID
 mturk$Reject[mturk$code == 590032] <- NA
 mturk$Approve[mturk$code == 590032] <- 'x'
 
-df$invalid[which(df$code == 208683)] #did not provide worker Id, but data seems valid
+#following did not provide worker Id, but data is indicated as valid
 mturk$Reject[mturk$code == 208683] <- NA
 mturk$Approve[mturk$code == 208683] <- 'x'
 
-write.excel(select(mturk, c(Approve, Reject)), row.names = F, col.names = F)
+#write.excel(select(mturk, c(Approve, Reject)), row.names = F, col.names = F)
+df$duplicate <- 0
+#Subset to only the valid items and non-redundant worker IDs
+df <- df[which(df$invalid == 0),]
+
+duplicates <- df$WorkerId[!is.na(df$WorkerId)] %>% 
+  duplicated %>% 
+  df$WorkerId[!is.na(df$WorkerId)][.]
+
+df[df$WorkerId%in%duplicates,]
+
+df[which(df$WorkerId == duplicates[1]),]
 
 
-
+dat <- mutate(dat, participant = 1:nrow(dat))
+dat <- select(dat, participant, everything())
 
 
 #### 2. Reverse Coding and Scale Scores -------------------
+
+#___Demographics ----------
+
+df$sex <- factor(df$sex, levels = 1:3, labels = c('male','female','non-binary'))
+
+df$ethnicity <- factor(df$ethnicity, levels = 1:2, labels = c('Hispanic/Latino','Not Hispanic/Latino'))
+
+df$race[df$race>5] <-6
+df$race <- factor(df$race, levels = 1:6, labels = c('American Indian or Alaskan Native','Asian','Black or African American','Native Hawaiian or Other Pacific Islander','White','Multiracial'))
+
+df$marital <- factor(df$marital, levels = 1:7, labels = c('Single (never married)','Married (first marriage)', 'Remarried','Separated','Divorced','Widowed','Long-term domestic partner (at least one year)'))
+
+df$ever_psyc[df$ever_psyc == 2] <- 0
+
+df$current_psyc[df$current_psyc == 2] <- 0
+
+df$device <- factor(df$device, levels = 1:4, labels = c('Computer','Tablet','Smartphone','Other'))
 
 #___2.1 NEO ---------------
 df[paste('r_neo_',1:60, sep='')] <- df[paste('neo_',1:60, sep='')]
@@ -216,7 +246,7 @@ df$bite <- rowMeans(df[paste('bite_',c(1,2,3,4,5),sep='')])
 
 #___2.8 cesd - CES-D ---------------
 df[paste('r_cesd_',1:20, sep='')] <- (df[paste('cesd_',1:20, sep='')]-1)
-df[paste('r_cesd_',c(4,8,12,16),sep = '')]<-3-df[paste('r_cesd_',c(4,8,12,16),sep = '')]
+df[paste('r_cesd_',c(4,8,12,16),sep = '')]<-3-df[paste('cesd_',c(4,8,12,16),sep = '')]
 df$cesd <- rowMeans(df[paste('r_cesd_',1:20,sep='')])
 
 #___2.9 cars - Child Anger Rumination Scale ---------------
@@ -230,11 +260,25 @@ df$meaq_behav <- rowMeans(df[paste('meaq_',c(1,	4,	6,	8,	10,	12,	15,	17,	19,	21,
 df$meaq_distress <- rowMeans(df[paste('meaq_',c(2,	3,	5,	7,	9,	11,	13,	14,	16,	18,	20,	22,	24),sep='')])
 
 #___2.12 promis.a - PROMIS Anger ---------------
+df$promis.a <- rowMeans(df[paste('promis.a_',1:5,sep='')])
 
 #___2.13 rpa - Reactive and Proactive Aggression ---------------
+df$rpa.proact <- rowMeans(df[paste('rpa_',c(2,	4,	6,	9,	10,	12,	15,	17,	18,	20,	21,	23),sep='')])
+
+df$rpa.react <- rowMeans(df[paste('rpa_',c(1,	3,	5,	7,	8,	11,	13,	14,	16,	19,	22),sep='')])
 
 #___2.14 r.pos.aff - Responses to Positive Affect ---------------
+df$r.pos.aff.efr <- rowMeans(df[paste('r.pos.aff_',1:5,sep='')])
+df$r.pos.aff.damp <- rowMeans(df[paste('r.pos.aff_',6:13,sep='')])
+df$r.pos.aff.sfr <- rowMeans(df[paste('r.pos.aff_',14:17,sep='')])
 
 #___2.15 supps - Short UPPS ---------------
+#to change perseverance and premeditation to lack thereof
+df[paste('r_supps_',1:20, sep='')] <- df[paste('supps_',1:20,sep='')]
+df[paste('r_supps_',c(1,	2,	4,	5,	7,	11,	12,	19), sep='')] <- 5- df[paste('supps_',c(1,	2,	4,	5,	7,	11,	12,	19), sep='')]
 
-
+df$supps.lack.persev <- rowMeans(df[paste('r_supps_',c(1,4,7,11),sep='')])
+df$supps.lack.premed <- rowMeans(df[paste('r_supps_',c(2,5,12,19),sep='')])
+df$supps.neg.urg <- rowMeans(df[paste('r_supps_',c(6,8,13,15),sep='')])
+df$supps.pos.urg <- rowMeans(df[paste('r_supps_',c(3,10,17,20),sep='')])
+df$supps.sens.seek <- rowMeans(df[paste('r_supps_',c(9,14,16,18),sep='')])

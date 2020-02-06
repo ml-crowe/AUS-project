@@ -7,6 +7,7 @@
   library(psych)
   library(jtools)
   library(readr)
+  library(lubridate)
   library(here)
 }
 
@@ -343,13 +344,8 @@ read.qualtrics.csv <- function(filename) {
                         LocationLongitude,
                         DistributionChannel,
                         UserLanguage))
-  dat$StartDate <- strptime(dat$StartDate,format = '%m/%d/%y %H:%M')
-  dat$EndDate <- strptime(dat$EndDate,format = '%m/%d/%y %H:%M')
-  dat$RecordedDate <- strptime(dat$RecordedDate,format = '%m/%d/%y %H:%M')
   dat <- rename(dat, duration = Duration..in.seconds., WorkerId = dem, code = Random.ID)
   dat$WorkerId <- trim(dat$WorkerId)
-  dat <- mutate(dat, participant = 1:nrow(dat))
-  dat <- select(dat, participant, everything())
   dat
 }
 

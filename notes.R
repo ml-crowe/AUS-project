@@ -3,10 +3,16 @@
 
 # where I left off --------------------------------------------------------
 # Need to remove duplicate Worker IDs from the dataset
-# coding PROMIS Anger scale
-# 
+# Subset to only the valid items and non-redundant worker IDs
+# moved participant number assignment to clean section to avoid duplicate numbers
 
 # current problems requiring resolution -----------------------------------
+
+
+# The read qualtrics function will accurately identify the Date Time structure of the primary qulatrics dataset, but not the pilot data. 
+# Manually setting date time; strptime(dat$StartDate,format = '%m/%d/%y %H:%M'); is necessary for the pilot data to be imported accurately, but it turns all of the date values for the primary dataset to NA. Trying to force the pilot dataset import to match the primary dataset specifications; spec <- spec(df); col_types = spec; yields misspecification error.
+
+# wrong.code object is no longer being appropriately generated
 
 ## 1/28/20 
 # worked on cleaning data
