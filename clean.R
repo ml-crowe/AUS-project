@@ -1,21 +1,21 @@
 
-# 1. Score Validation items ----
+# 1. Score Validation ----
 
 #### Virtue Scale ####
 df[paste('r_virtue_',1:8,sep = '')]<-NA
-df$r_virtue_1[df$virtue_1>=4]<-1
-df$r_virtue_2[df$virtue_2>=4]<-1
-df$r_virtue_6[df$virtue_6>=4]<-1
+df$r_virtue_1[df$virtue_1>=4]<-1 #I have never told a lie to anyone
+df$r_virtue_2[df$virtue_2>=4]<-1 #I have never been envious of anyone else
+df$r_virtue_6[df$virtue_6>=4]<-1 #I have never been angry 
 
 df$r_virtue_1[df$virtue_1<4]<-0
 df$r_virtue_2[df$virtue_2<4]<-0
 df$r_virtue_6[df$virtue_6<4]<-0
 
-df$r_virtue_3[df$virtue_3<=2]<-1
-df$r_virtue_4[df$virtue_4<=2]<-1
-df$r_virtue_5[df$virtue_5<=2]<-1
-df$r_virtue_7[df$virtue_7<=2]<-1
-df$r_virtue_8[df$virtue_8<=2]<-1
+df$r_virtue_3[df$virtue_3<=2]<-1 #I have lied at least once
+df$r_virtue_4[df$virtue_4<=2]<-1 #Treated someone unfairly at least once
+df$r_virtue_5[df$virtue_5<=2]<-1 #I have laughed at an inappropriate joke
+df$r_virtue_7[df$virtue_7<=2]<-1 #I have been impolite
+df$r_virtue_8[df$virtue_8<=2]<-1 #I have eaten more than I should have
 
 df$r_virtue_3[df$virtue_3>2]<-0
 df$r_virtue_4[df$virtue_4>2]<-0
@@ -25,11 +25,11 @@ df$r_virtue_8[df$virtue_8>2]<-0
 
 #### Infrequency ####
 df[paste('r_infreq_',1:8,sep = '')]<-NA
-df$r_infreq_1[df$infreq_1>=4]<-1
-df$r_infreq_3[df$infreq_3>=4]<-1
-df$r_infreq_5[df$infreq_5>=4]<-1
-df$r_infreq_7[df$infreq_7>=4]<-1
-df$r_infreq_8[df$infreq_8>=4]<-1
+df$r_infreq_1[df$infreq_1>=4]<-1 #I frequently forget my middle name
+df$r_infreq_3[df$infreq_3>=4]<-1 #I never speak to anyone during the day
+df$r_infreq_5[df$infreq_5>=4]<-1 #I get less than 1 hour of sleep a night
+df$r_infreq_7[df$infreq_7>=4]<-1 #I have never listened to music
+df$r_infreq_8[df$infreq_8>=4]<-1 #Sailed across the ocean in a balloon
 
 df$r_infreq_1[df$infreq_1<4]<-0
 df$r_infreq_3[df$infreq_3<4]<-0
@@ -37,9 +37,9 @@ df$r_infreq_5[df$infreq_5<4]<-0
 df$r_infreq_7[df$infreq_7<4]<-0
 df$r_infreq_8[df$infreq_8<4]<-0
 
-df$r_infreq_2[df$infreq_2<=2]<-1
-df$r_infreq_4[df$infreq_4<=2]<-1
-df$r_infreq_6[df$infreq_6<=2]<-1
+df$r_infreq_2[df$infreq_2<=2]<-1 #I try to eat something almost every day
+df$r_infreq_4[df$infreq_4<=2]<-1 #better rested after good night sleep
+df$r_infreq_6[df$infreq_6<=2]<-1 #Lend things to people who won't take care
 
 df$r_infreq_2[df$infreq_2>2]<-0
 df$r_infreq_4[df$infreq_4>2]<-0
@@ -49,9 +49,9 @@ df$r_infreq_6[df$infreq_6>2]<-0
 df$virtue<-rowSums(df[paste('r_virtue_',1:8,sep='')]) #invalid if it sums to 3 or more
 df$infreq<-rowSums(df[paste('r_infreq_',1:8,sep='')]) #invalid if it sums to 4 or more
 
-### Invalid responses ####
+### Identify Invalid responses ####
 df$invalid<-0
-df$invalid[df$virtue>2]<-1
+#df$invalid[df$virtue>2]<-1
 df$invalid[df$infreq>3]<-1
 df$invalid[
   select(df,WorkerId:virtue_8) %>%
@@ -60,7 +60,7 @@ df$invalid[
 ] <- 1
 df$invalid[df$duration<=length(select(df,WorkerId:virtue_8))] <- 1
 
-# Identify participants that should be rejected/approved -------
+# Identify Mturk Rejected/approved -------
 # possible helpful link:
 # https://mysite.ku.edu.tr/swithrow/2015/02/13/automating-the-accept-and-reject-process-in-mturk-with-r/
 
@@ -129,7 +129,6 @@ mturk$Reject[mturk$code == 208683] <- NA
 mturk$Approve[mturk$code == 208683] <- 'x'
 
 #write.excel(select(mturk, c(Approve, Reject)), row.names = F, col.names = F)
-df$duplicate <- 0
 #Subset to only the valid items and non-redundant worker IDs
 df <- df[which(df$invalid == 0),]
 
@@ -139,12 +138,17 @@ duplicates <- df$WorkerId[!is.na(df$WorkerId)] %>%
 
 df[df$WorkerId%in%duplicates,]
 
-df[which(df$WorkerId == duplicates[1]),]
+df[which(df$WorkerId == duplicates[1]),] #save first completion
+df <- df[-which(df$participant == 280),]
 
+df[which(df$WorkerId == duplicates[2]),] #save first completion
+df <- df[-which(df$participant == 222),]
 
-dat <- mutate(dat, participant = 1:nrow(dat))
-dat <- select(dat, participant, everything())
+df[which(df$WorkerId == duplicates[3]),] #save first completion
+df <- df[-which(df$participant == 538),]
 
+df[which(df$WorkerId == duplicates[4]),] #save first completion
+df <- df[-which(df$participant == 202),]
 
 #### 2. Reverse Coding and Scale Scores -------------------
 
