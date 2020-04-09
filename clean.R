@@ -1,7 +1,7 @@
 
 # 1. Score Validation ----
 
-#### Virtue Scale ####
+#### ___1.1 Virtue Scale ####
 df[paste('r_virtue_',1:8,sep = '')]<-NA
 df$r_virtue_1[df$virtue_1>=4]<-1 #I have never told a lie to anyone
 df$r_virtue_2[df$virtue_2>=4]<-1 #I have never been envious of anyone else
@@ -23,7 +23,7 @@ df$r_virtue_5[df$virtue_5>2]<-0
 df$r_virtue_7[df$virtue_7>2]<-0
 df$r_virtue_8[df$virtue_8>2]<-0
 
-#### Infrequency ####
+#### ___1.2. Infrequency ####
 df[paste('r_infreq_',1:8,sep = '')]<-NA
 df$r_infreq_1[df$infreq_1>=4]<-1 #I frequently forget my middle name
 df$r_infreq_3[df$infreq_3>=4]<-1 #I never speak to anyone during the day
@@ -49,7 +49,7 @@ df$r_infreq_6[df$infreq_6>2]<-0
 df$virtue<-rowSums(df[paste('r_virtue_',1:8,sep='')]) #invalid if it sums to 3 or more
 df$infreq<-rowSums(df[paste('r_infreq_',1:8,sep='')]) #invalid if it sums to 4 or more
 
-### Identify Invalid responses ####
+### ___1.3 Identify Invalid responses - ignore virtue scale ####
 df$invalid<-0
 #df$invalid[df$virtue>2]<-1
 df$invalid[df$infreq>3]<-1
@@ -60,12 +60,13 @@ df$invalid[
 ] <- 1
 df$invalid[df$duration<=length(select(df,WorkerId:virtue_8))] <- 1
 
-# Identify Mturk Rejected/approved -------
+# 2. Reject/approve Workers -------
 # possible helpful link:
 # https://mysite.ku.edu.tr/swithrow/2015/02/13/automating-the-accept-and-reject-process-in-mturk-with-r/
 
 #Reject people that have too many NAs
 #length(select(df,WorkerId:virtue_8))/2 = 50% of items
+#Full survey only
 excess.na <- mturk$WorkerId %in% 
   (select(df, WorkerId:virtue_8) %>% 
      apply(1, function(z) sum(is.na(z))) %>% 
@@ -129,6 +130,8 @@ mturk$Reject[mturk$code == 208683] <- NA
 mturk$Approve[mturk$code == 208683] <- 'x'
 
 #write.excel(select(mturk, c(Approve, Reject)), row.names = F, col.names = F)
+
+#### 3. Remove invalid and duplicate responses #####
 #Subset to only the valid items and non-redundant worker IDs
 df <- df[which(df$invalid == 0),]
 
@@ -150,9 +153,51 @@ df <- df[-which(df$participant == 538),]
 df[which(df$WorkerId == duplicates[4]),] #save first completion
 df <- df[-which(df$participant == 202),]
 
-#### 2. Reverse Coding and Scale Scores -------------------
+#### 4. Prescreen data cleaning and approval ######
 
-#___Demographics ----------
+pre.bad.id <- !(pre.mturk$WorkerId %in% intersect(pre.df$WorkerId, pre.mturk$WorkerId))
+# pre.mturk$WorkerId[pre.bad.id]
+# manually modified the following: 
+# Random ID 756004 - Worker ID had odd characters at the end of it
+# Random ID 680458 - Worker ID was correct, but in lower case
+# Random ID 205493 - Worker ID was preceeded by "COPIED"
+# Random ID 275813 - Worker ID had a O in place of a 0
+# Random ID 660293 - The link to the qualtrics survey was pasted in place of a Worker ID but there was a matching survey code
+pre.mturk$Reject[pre.bad.id] <- "Your Worker ID was not found in the survey. Your survey code could not be authenticated."
+
+#pre.mturk[pre.wrong.code, c('WorkerId','code')] 
+# Random ID 871225 - missing one number in MTurk dataset, copied it short - adjusted in "load" file
+pre.wrong.code <- !(pre.mturk$WorkerId %in% dplyr::intersect(select(pre.df, WorkerId, code),select(pre.mturk,WorkerId,code))$WorkerId)
+pre.mturk$Reject[pre.wrong.code] <- "The survey code entered into the HIT did not match the code provided by the survey or was left blank."
+
+# reject people that gave screen responses that don't deserve payment based on manual cleaning
+pre.bad.screen.response <- pre.mturk$WorkerId %in% pre.df$WorkerId[!is.na(pre.df$Reject)]
+pre.mturk$Reject[pre.bad.screen.response] <- "Missing or incomplete response to screening item."
+
+#Approve everyone that didn't get rejected
+pre.mturk$Approve[is.na(pre.mturk$Reject)] <- "x"
+
+#write.excel(select(pre.mturk, c(Approve, Reject)), row.names = F, col.names = F)
+
+#remove duplicate worker IDs
+pre.duplicates <- pre.df$WorkerId[!is.na(pre.df$WorkerId)] %>% 
+  duplicated %>% 
+  pre.df$WorkerId[!is.na(pre.df$WorkerId)][.]
+# one duplicate ID
+
+#___4.1 Qualification Assignment ----------
+
+approved.workers <- filter(pre.df, is.na(DoNotInclude))
+approved.workers$WorkerId[!approved.workers$WorkerId %in% all.workers$`Worker ID`] #6 workers that were approved were not found in list of all past workers from Mturk
+
+all.workers$`UPDATE-AUS screen approved`[all.workers$`Worker ID` %in% approved.workers$WorkerId] <- 1
+
+#copy value to updated file
+write.excel(all.workers$`UPDATE-AUS screen approved`,row.names = F, col.names = F)
+
+#### 5. Reverse Coding and Scale Scores -------------------
+
+#___5.1 Demographics ----------
 
 df$sex <- factor(df$sex, levels = 1:3, labels = c('male','female','non-binary'))
 
@@ -169,7 +214,7 @@ df$current_psyc[df$current_psyc == 2] <- 0
 
 df$device <- factor(df$device, levels = 1:4, labels = c('Computer','Tablet','Smartphone','Other'))
 
-#___2.1 NEO ---------------
+#___5.2 NEO ---------------
 df[paste('r_neo_',1:60, sep='')] <- df[paste('neo_',1:60, sep='')]
 
 df[paste('r_neo_',
@@ -219,19 +264,19 @@ df$o <- mean.n(df[,paste('r_neo_',c(3+(5*0:11)), sep = '')], 2)
 df$a <- mean.n(df[,paste('r_neo_',c(4+(5*0:11)), sep = '')], 2)
 df$c <- mean.n(df[,paste('r_neo_',c(5+(5*0:11)), sep = '')], 2)
 
-#___2.2 ari - Affective Reactivity Index ---------------
+#___5.3 ari - Affective Reactivity Index ---------------
 df$ari <- rowMeans(df[paste('ari_',1:7,sep='')])
 
-#___2.3 aus - Anger Upregulation Scale ---------------
+#___5.4 aus - Anger Upregulation Scale ---------------
 # not currently scored
-# variable names aus_1:aus_60
+# variable names aus_1:aus_70
 
-#___2.4 amii - Angry Mood Improvement Inventory ---------------
+#___5.5 amii - Angry Mood Improvement Inventory ---------------
 df$amii_control <- rowMeans(df[paste('amii_',	c(1,4,8,11,15,18,20,24),sep = '')])
 df$amii_in <- rowMeans(df[paste('amii_',	c(3,	5,	6,	10,	13,	16,	17,	21),sep = '')])
 df$amii_out <- rowMeans(df[paste('amii_',	c(2,	7,	9,	12,	14,	19,	22,	23),sep = '')])
 
-#___2.5 bisbas - BIS/BAS ---------------
+#___5.6 bisbas - BIS/BAS ---------------
 
 df[paste('r_bisbas_',1:24, sep='')] <- df[paste('bisbas_',1:24, sep='')]
 df[paste('r_bisbas_',c(2,22),sep = '')]<-5-df[paste('bisbas_',c(2,22),sep = '')]
@@ -242,41 +287,41 @@ df$bas_drive <- rowMeans(df[paste('r_bisbas_',c(3,9,12,21),sep='')])
 df$bas_funseek <- rowMeans(df[paste('r_bisbas_',c(5,10,15,20),sep='')])
 df$bas_reward <- rowMeans(df[paste('r_bisbas_',c(4,7,14,18,23),sep='')])
 
-#___2.6 bam - Brief Agitation Measure ---------------
+#___5.7 bam - Brief Agitation Measure ---------------
 df$bam <- rowMeans(df[paste('bam_',c(1,2,3),sep='')])
 
-#___2.7 bite - Brief Irritability Test ---------------
+#___5.8 bite - Brief Irritability Test ---------------
 df$bite <- rowMeans(df[paste('bite_',c(1,2,3,4,5),sep='')])
 
-#___2.8 cesd - CES-D ---------------
+#___5.9 cesd - CES-D ---------------
 df[paste('r_cesd_',1:20, sep='')] <- (df[paste('cesd_',1:20, sep='')]-1)
 df[paste('r_cesd_',c(4,8,12,16),sep = '')]<-3-df[paste('cesd_',c(4,8,12,16),sep = '')]
 df$cesd <- rowMeans(df[paste('r_cesd_',1:20,sep='')])
 
-#___2.9 cars - Child Anger Rumination Scale ---------------
+#___5.10 cars - Child Anger Rumination Scale ---------------
 df$cars <- rowMeans(df[paste('cars_',1:19,sep='')])
 
-#___2.10 crrs - Child Ruminative Response Scale ---------------
+#___5.11 crrs - Child Ruminative Response Scale ---------------
 df$crrs <- rowMeans(df[paste('crrs_',1:13,sep='')])
 
-#___2.11 meaq - Experiential Avoidance ---------------
+#___5.12 meaq - Experiential Avoidance ---------------
 df$meaq_behav <- rowMeans(df[paste('meaq_',c(1,	4,	6,	8,	10,	12,	15,	17,	19,	21,	23),sep='')])
 df$meaq_distress <- rowMeans(df[paste('meaq_',c(2,	3,	5,	7,	9,	11,	13,	14,	16,	18,	20,	22,	24),sep='')])
 
-#___2.12 promis.a - PROMIS Anger ---------------
+#___5.13 promis.a - PROMIS Anger ---------------
 df$promis.a <- rowMeans(df[paste('promis.a_',1:5,sep='')])
 
-#___2.13 rpa - Reactive and Proactive Aggression ---------------
+#___5.14 rpa - Reactive and Proactive Aggression ---------------
 df$rpa.proact <- rowMeans(df[paste('rpa_',c(2,	4,	6,	9,	10,	12,	15,	17,	18,	20,	21,	23),sep='')])
 
 df$rpa.react <- rowMeans(df[paste('rpa_',c(1,	3,	5,	7,	8,	11,	13,	14,	16,	19,	22),sep='')])
 
-#___2.14 r.pos.aff - Responses to Positive Affect ---------------
+#___5.15 r.pos.aff - Responses to Positive Affect ---------------
 df$r.pos.aff.efr <- rowMeans(df[paste('r.pos.aff_',1:5,sep='')])
 df$r.pos.aff.damp <- rowMeans(df[paste('r.pos.aff_',6:13,sep='')])
 df$r.pos.aff.sfr <- rowMeans(df[paste('r.pos.aff_',14:17,sep='')])
 
-#___2.15 supps - Short UPPS ---------------
+#___5.16 supps - Short UPPS ---------------
 #to change perseverance and premeditation to lack thereof
 df[paste('r_supps_',1:20, sep='')] <- df[paste('supps_',1:20,sep='')]
 df[paste('r_supps_',c(1,	2,	4,	5,	7,	11,	12,	19), sep='')] <- 5- df[paste('supps_',c(1,	2,	4,	5,	7,	11,	12,	19), sep='')]
