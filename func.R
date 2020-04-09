@@ -349,7 +349,7 @@ read.qualtrics.csv <- function(filename) {
   dat
 }
 
-###### read a .csv downloaded from Mturk ###########
+###### read mturk .csv ###########
 read.mturk.csv <- function(filename) {
   require(readr)
   dat <- read_csv(filename)
