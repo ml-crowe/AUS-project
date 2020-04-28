@@ -53,14 +53,15 @@ df$infreq<-rowSums(df[paste('r_infreq_',1:8,sep='')]) #invalid if it sums to 4 o
 df$invalid<-0
 #df$invalid[df$virtue>2]<-1
 df$invalid[df$infreq>3]<-1
-df$invalid[
+df$invalid[ #invalid if missing more than 25% of responses
   select(df,WorkerId:virtue_8) %>%
   apply(1, function(z) sum(is.na(z))) %>% 
   is_weakly_greater_than(length(select(df,WorkerId:virtue_8))/4)
 ] <- 1
+#invalid if they took less than 1 second to respond to each item on average
 df$invalid[df$duration<=length(select(df,WorkerId:virtue_8))] <- 1
 
-# 2. Reject/approve Workers -------
+# 2. IGNORE Reject/approve Workers - Round 1 -------
 # possible helpful link:
 # https://mysite.ku.edu.tr/swithrow/2015/02/13/automating-the-accept-and-reject-process-in-mturk-with-r/
 
@@ -131,6 +132,38 @@ mturk$Approve[mturk$code == 208683] <- 'x'
 
 #write.excel(select(mturk, c(Approve, Reject)), row.names = F, col.names = F)
 
+#___2.1 IGNORE Rejection/Approval for AUS round 2 ----------------
+# completed visual inspection of the rejected responses 
+#mturk$code[which(mturk$code == 302194)] #code matches one given
+#participant didn't copy worker id into box
+#visual inspection of data seems acceptable
+mturk$Reject[mturk$code == 302194] <- NA
+mturk$Approve[mturk$code == 302194] <- 'x'
+
+#df$WorkerId[which(df$code == 256945)] #clear typo for worker ID
+mturk$Reject[mturk$code == 256945] <- NA
+mturk$Approve[mturk$code == 256945] <- 'x'
+
+#df$WorkerId[which(df$code == 778514)] #clear typo for worker ID
+mturk$Reject[mturk$code == 778514] <- NA
+mturk$Approve[mturk$code == 778514] <- 'x'
+
+#df$WorkerId[which(df$code == 162028)] #clear typo for code
+mturk$Reject[mturk$code == 16028] <- NA
+mturk$Approve[mturk$code == 16028] <- 'x'
+
+#df$WorkerId[which(df$code == 841749)] #left code blank in mturk file
+#df$invalid[which(df$code == 841749)] #responses seem valid
+mturk$Reject[mturk$WorkerId == "ARG392N6HWZCJ"] <- NA
+mturk$Approve[mturk$WorkerId == "ARG392N6HWZCJ"] <- 'x'
+
+mturk[which(mturk$WorkerId == "A1B2V27QSGPT6W"),] #worker id not found in df
+# also code is wrong
+# participant emailed and complained. gave him approval.
+
+# manually approved 16 additional workers on 4/15/20
+
+
 #### 3. Remove invalid and duplicate responses #####
 #Subset to only the valid items and non-redundant worker IDs
 df <- df[which(df$invalid == 0),]
@@ -153,7 +186,7 @@ df <- df[-which(df$participant == 538),]
 df[which(df$WorkerId == duplicates[4]),] #save first completion
 df <- df[-which(df$participant == 202),]
 
-#### 4. Prescreen data cleaning and approval ######
+#### 4. IGNORE Prescreen data cleaning and approval ######
 
 pre.bad.id <- !(pre.mturk$WorkerId %in% intersect(pre.df$WorkerId, pre.mturk$WorkerId))
 # pre.mturk$WorkerId[pre.bad.id]
@@ -185,7 +218,7 @@ pre.duplicates <- pre.df$WorkerId[!is.na(pre.df$WorkerId)] %>%
   pre.df$WorkerId[!is.na(pre.df$WorkerId)][.]
 # one duplicate ID
 
-#___4.1 Qualification Assignment ----------
+#___4.1 IGNORE Qualification Assignment ----------
 
 approved.workers <- filter(pre.df, is.na(DoNotInclude))
 approved.workers$WorkerId[!approved.workers$WorkerId %in% all.workers$`Worker ID`] #6 workers that were approved were not found in list of all past workers from Mturk
@@ -194,6 +227,38 @@ all.workers$`UPDATE-AUS screen approved`[all.workers$`Worker ID` %in% approved.w
 
 #copy value to updated file
 write.excel(all.workers$`UPDATE-AUS screen approved`,row.names = F, col.names = F)
+
+#___4.2 IGNORE Test Retest Qualification Assignment ----------
+
+#interested in acquiring workers who completed the AUS roughly two weeks prior
+#retest hit will be posted on 4/24/20
+
+#converted round2.df to df for the purposes of coding 
+#df <- round2.df
+#mturk <- round2.mturk
+#write.excel(df)
+
+approve.for.retest <- filter(df, ic == 2) %>%
+  filter(invalid == 0) %>% 
+  select(WorkerId) %>% 
+  dplyr::intersect(select(mturk,WorkerId)) #IDs of workers to be approved
+
+#don't know how to finish this pipe with an assignment
+workers %>% 
+  filter(Worker.ID %in% pull(approve.for.retest)) %>% 
+  select(UPDATE.AUS.RT.Approval)
+
+workers[which(workers$Worker.ID %in% pull(approve.for.retest)),"UPDATE.AUS.RT.Approval"] <- 1
+
+#write.excel(workers$UPDATE.AUS.RT.Approval, col.names = F)
+
+
+
+
+
+#round2.df <- df
+#round2.mturk <- mturk
+
 
 #### 5. Reverse Coding and Scale Scores -------------------
 
