@@ -8,6 +8,7 @@
   library(jtools)
   library(readr)
   library(lubridate)
+  library(parallel)
   library(here)
 }
 
