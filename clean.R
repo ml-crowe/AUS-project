@@ -172,6 +172,9 @@ duplicates <- df$WorkerId[!is.na(df$WorkerId)] %>%
   duplicated %>% 
   df$WorkerId[!is.na(df$WorkerId)][.]
 
+duplicates
+# four duplicate worker IDs identified
+
 df[df$WorkerId%in%duplicates,]
 
 df[which(df$WorkerId == duplicates[1]),] #save first completion
@@ -185,6 +188,8 @@ df <- df[-which(df$participant == 538),]
 
 df[which(df$WorkerId == duplicates[4]),] #save first completion
 df <- df[-which(df$participant == 202),]
+
+rm(duplicates)
 
 #### 4. IGNORE Prescreen data cleaning and approval ######
 
@@ -360,7 +365,7 @@ df$bite <- rowMeans(df[paste('bite_',c(1,2,3,4,5),sep='')])
 
 #___5.9 cesd - CES-D ---------------
 df[paste('r_cesd_',1:20, sep='')] <- (df[paste('cesd_',1:20, sep='')]-1)
-df[paste('r_cesd_',c(4,8,12,16),sep = '')]<-3-df[paste('cesd_',c(4,8,12,16),sep = '')]
+df[paste('r_cesd_',c(4,8,12,16),sep = '')]<-3-df[paste('r_cesd_',c(4,8,12,16),sep = '')]
 df$cesd <- rowMeans(df[paste('r_cesd_',1:20,sep='')])
 
 #___5.10 cars - Child Anger Rumination Scale ---------------
