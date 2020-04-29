@@ -16,14 +16,14 @@ df[,paste('r_neo_',c(3+(5*0:11)), sep = '')] %>% alpha #O = .65
 df[,paste('r_neo_',c(4+(5*0:11)), sep = '')] %>% alpha #A = .76
 df[,paste('r_neo_',c(5+(5*0:11)), sep = '')] %>% alpha #C = .87
 
-#___1.3 ARI ---------------
+#___1.3 ari ---------------
 df[paste('ari_',1:7,sep='')] %>% alpha # .90
 
 #___1.4 AUS ---------------
 # not currently scored
 # variable names aus_1:aus_70
 
-#___1.5 AMII ---------------
+#___1.5 amii_control; _in; _out ---------------
 df[paste('amii_',	c(1,4,8,11,15,18,20,24),sep = '')] %>% alpha # Control = .85
 df[paste('amii_',	c(3,5,6,10,13,16,17,21),sep = '')] %>% alpha # In = .83
 df[paste('amii_',	c(2,7,9,12,14,19,22,23),sep = '')] %>% alpha # Out = .83
@@ -51,7 +51,7 @@ df[paste('cars_',1:19,sep='')] %>% alpha # .95
 #___1.11 crrs ---------------
 df[paste('crrs_',1:13,sep='')] %>% alpha # .93
 
-#___1.12 meaq ---------------
+#___1.12 meaq_behav; meaq_distress ---------------
 df[paste('meaq_',c(1,	4,	6,	8,	10,	12,	15,	17,	19,	21,	23),sep='')] %>% alpha # Behavior = .93
 df[paste('meaq_',c(2,	3,	5,	7,	9,	11,	13,	14,	16,	18,	20,	22,	24),sep='')] %>% alpha # Distress = .92
 
@@ -75,7 +75,196 @@ df[paste('r_supps_',c(6,8,13,15),sep='')] %>% alpha #negative urgency = .85
 df[paste('r_supps_',c(3,10,17,20),sep='')] %>% alpha #positive urgency = .83
 df[paste('r_supps_',c(9,14,16,18),sep='')] %>% alpha #sensation seeking = .76
 
-#### 2. Factor Analyses -------------------
+#### 2. Factor Analyses: 5 to 7 factors -------------------
 aus <- select(df, aus_1:aus_70)
-parallel <- fa.parallel(aus, fm = 'pa', fa = 'both', n.iter = 100)
-#Parallel analysis suggests that the number of factors =  6  and the number of components =  4 
+#### ___2.1 Parallel analysis ------------
+parallel <- fa.parallel(aus, fm = 'pa', fa = 'both', n.iter = 1000)
+#Parallel analysis suggests that the number of factors =  7  and the number of components =  5
+
+data.frame('Factors' = (1:15),
+           'Eigenvalues' = parallel$pc.values[1:15],
+           'Sim_avg' = parallel$pc.sim[1:15],
+           'Sim_95' = sapply(141:155, function(x){
+             parallel$values[,x] %>% quantile(.95)
+           }),
+           'one' = rep(1,15)) # %>% write.excel(row.names = F)
+
+#### ___2.2 MAP analysis ------------
+map <- vss(aus, n = 10, rotate = 'promax', fm = 'pa')
+# MAP = 7 factors; BIS = 6 factors
+
+#### ___2.3 Factor Analyses ------------
+#these all use regression to calculate factor scores
+fa1<-fa(aus,nfactors=1,rotate = 'none',fm='pa', alpha = .05) 
+fa2<-fa(aus,nfactors=2,rotate = 'promax',fm='pa', alpha = .05)
+fa3<-fa(aus,nfactors=3,rotate = 'promax',fm='pa', alpha = .05)
+fa4<-fa(aus,nfactors=4,rotate = 'promax',fm='pa', alpha = .05)
+fa5<-fa(aus,nfactors=5,rotate = 'promax',fm='pa', alpha = .05)
+fa6<-fa(aus,nfactors=6,rotate = 'promax',fm='pa', alpha = .05)
+fa7<-fa(aus,nfactors=7,rotate = 'promax',fm='pa', alpha = .05)
+fa8<-fa(aus,nfactors=8,rotate = 'promax',fm='pa', alpha = .05)
+fa9<-fa(aus,nfactors=9,rotate = 'promax',fm='pa', alpha = .05)
+
+#### ______2.3.1 Fit and Variance Accounted for ------------
+compiled.fit <- data.frame(
+  'VarAccounted' = rbind(
+    fa1$Vaccounted['Proportion Var',],
+    fa2$Vaccounted['Cumulative Var',2],
+    fa3$Vaccounted['Cumulative Var',3],
+    fa4$Vaccounted['Cumulative Var',4],
+    fa5$Vaccounted['Cumulative Var',5],
+    fa6$Vaccounted['Cumulative Var',6],
+    fa7$Vaccounted['Cumulative Var',7],
+    fa8$Vaccounted['Cumulative Var',8],
+    fa9$Vaccounted['Cumulative Var',9]
+  ),
+  rbind(
+    fa1$RMSEA[1:3],
+    fa2$RMSEA[1:3],
+    fa3$RMSEA[1:3],
+    fa4$RMSEA[1:3],
+    fa5$RMSEA[1:3],
+    fa6$RMSEA[1:3],
+    fa7$RMSEA[1:3],
+    fa8$RMSEA[1:3],
+    fa9$RMSEA[1:3]
+  ),
+  'MAP' = map$map[1:9],
+  'BIC' = map$vss.stats$BIC[1:9]
+)
+
+compiled.fit$VarDiff <- c(NA,
+      sapply(2:length(compiled.fit$VarAccounted), function(x){
+              compiled.fit$VarAccounted[x] - compiled.fit$VarAccounted[x-1]
+            }))
+
+compiled.fit <- select(compiled.fit, VarAccounted, VarDiff, everything())
+compiled.fit %>% write.excel(row.names = F)
+
+
+#### ______2.3.2 Factor Loadings (Structure Matrix) ------------
+# Structure loading matrix = pattern matrix X factor intercorrelation matrix)
+fastructuresdf<-data.frame(fa1$Structure[,1],
+                           fa2$Structure[,1:2],
+                           fa3$Structure[,1:3],
+                           fa4$Structure[,1:4],
+                           fa5$Structure[,1:5],
+                           fa6$Structure[,1:6],
+                           fa7$Structure[,1:7],
+                           fa8$Structure[,1:8],
+                           fa9$Structure[,1:9])
+
+names(fastructuresdf)<-c('fa1',
+                         paste('fa2_',colnames(fa2$loadings),sep=''),
+                         paste('fa3_',colnames(fa3$loadings),sep=''),
+                         paste('fa4_',colnames(fa4$loadings),sep=''),
+                         paste('fa5_',colnames(fa5$loadings),sep=''),
+                         paste('fa6_',colnames(fa6$loadings),sep=''),
+                         paste('fa7_',colnames(fa7$loadings),sep=''),
+                         paste('fa8_',colnames(fa8$loadings),sep=''),
+                         paste('fa9_',colnames(fa9$loadings),sep=''))
+
+
+
+#fastructuresdf<-fastructuresdf[,c(order(names(fastructuresdf)))]
+#didn't want to reorder because it could result in confusion down the line
+#when comparing findings to those from R output
+names(fastructuresdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
+
+write.excel(fastructuresdf, row.names = F, col.names = F)
+
+#### ______2.3.3 Factor Loadings (Pattern matrix) ------------
+faloadingsdf<-data.frame(fa1$loadings[,1],
+                           fa2$loadings[,1:2],
+                           fa3$loadings[,1:3],
+                           fa4$loadings[,1:4],
+                           fa5$loadings[,1:5],
+                           fa6$loadings[,1:6],
+                           fa7$loadings[,1:7],
+                           fa8$loadings[,1:8],
+                           fa9$loadings[,1:9])
+
+names(faloadingsdf)<-c('fa1',
+                         paste('fa2_',colnames(fa2$loadings),sep=''),
+                         paste('fa3_',colnames(fa3$loadings),sep=''),
+                         paste('fa4_',colnames(fa4$loadings),sep=''),
+                         paste('fa5_',colnames(fa5$loadings),sep=''),
+                         paste('fa6_',colnames(fa6$loadings),sep=''),
+                         paste('fa7_',colnames(fa7$loadings),sep=''),
+                         paste('fa8_',colnames(fa8$loadings),sep=''),
+                         paste('fa9_',colnames(fa9$loadings),sep=''))
+
+
+
+#fastructuresdf<-fastructuresdf[,c(order(names(fastructuresdf)))]
+#didn't want to reorder because it could result in confusion down the line
+#when comparing findings to those from R output
+names(faloadingsdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
+
+write.excel(faloadingsdf, row.names = F, col.names = F)
+
+#### ______2.3.4 Factor Correlations ------------
+
+#### Not sure the ordering is the same here - probably want to avoid reordering and just change the name to ensure no issues
+
+
+fa2$Phi %>% write.excel(row.names = F, col.names = F)
+fa3$Phi %>% write.excel(row.names = F, col.names = F)
+fa4$Phi %>% write.excel(row.names = F, col.names = F)
+fa5$Phi %>% write.excel(row.names = F, col.names = F)
+fa6$Phi %>% write.excel(row.names = F, col.names = F)
+fa7$Phi %>% write.excel(row.names = F, col.names = F)
+fa8$Phi %>% write.excel(row.names = F, col.names = F)
+fa9$Phi %>% write.excel(row.names = F, col.names = F)
+
+#### 3. Correlating factors with Criterions -------------------
+#### ___3.1 Factor scores ------------
+fascoresdf<-data.frame(fa1$scores,
+                       fa2$scores,
+                       fa3$scores,
+                       fa4$scores,
+                       fa5$scores,
+                       fa6$scores,
+                       fa7$scores,
+                       fa8$scores,
+                       fa9$scores)
+
+
+names(fascoresdf)<-c('fa1',
+                     paste('fa2_',colnames(fa2$scores),sep=''),
+                     paste('fa3_',colnames(fa3$scores),sep=''),
+                     paste('fa4_',colnames(fa4$scores),sep=''),
+                     paste('fa5_',colnames(fa5$scores),sep=''),
+                     paste('fa6_',colnames(fa6$scores),sep=''),
+                     paste('fa7_',colnames(fa7$scores),sep=''),
+                     paste('fa8_',colnames(fa8$scores),sep=''),
+                     paste('fa9_',colnames(fa9$scores),sep=''))
+
+### Save and name factor scores
+#fascoresdf<-fascoresdf[,c(order(names(fascoresdf)))]
+names(fascoresdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
+
+#### ___3.2 Correlations ------------
+
+#### ______3.2.1 NEO  ------------
+data.frame(df[c('n',varlist(df,pattern = '^n_'),
+                'e',varlist(df,pattern = '^e_'),
+                'o',varlist(df,pattern = '^o_'),
+                'a',varlist(df,pattern = '^a_'),
+                'c',varlist(df,pattern = '^c_'))],
+           fascoresdf) %>% 
+  r_table(., with = c(names(fascoresdf))) %>% .$cors %>% write.excel(.,row.names = T, col.names = T)
+
+#### ______3.2.2 Other criteria  ------------
+data.frame(
+  select(df, ari, 
+         amii_control, amii_in, amii_out,
+         bis, bas, starts_with('bas_'),
+         bam, bite, cesd, cars, crrs, 
+         meaq_behav, meaq_distress, promis.a, 
+         rpa.proact, rpa.react, 
+         starts_with('r.pos.aff.'), 
+         starts_with('supps.')),
+  fascoresdf
+) %>% 
+  r_table(., with = c(names(fascoresdf))) %>% .$cors %>% write.excel(.,row.names = T, col.names = T)
