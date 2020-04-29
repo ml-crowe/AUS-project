@@ -82,8 +82,16 @@ workers <- workers %>% #do this to remove spaces from names
 
 # 7. Save/load results files --------
 # ___7.1 Clean datasets -----
-save(df, aus,
+save(df, aus, 
      file = here("output/clean data.RData"))
 
 load(here("output/clean data.RData"))
+
+save(parallel, map,
+     fa1, fa2, fa3, fa4, fa5, fa6, fa7, fa8, fa9,
+     fastructuresdf, faloadingsdf, fascoresdf,
+     compiled.fit,
+     file = here("output/fa results.RData"))
+
+load(here("output/fa results.RData"))
 
