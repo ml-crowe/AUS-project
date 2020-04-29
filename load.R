@@ -78,5 +78,12 @@ workers <- workers %>% #do this to remove spaces from names
   data.frame() %>% 
   tbl_df
 
-# 6. Retest data
+# 6. Retest data ---------
+
+# 7. Save/load results files --------
+# ___7.1 Clean datasets -----
+save(df, aus,
+     file = here("output/clean data.RData"))
+
+load(here("output/clean data.RData"))
 
