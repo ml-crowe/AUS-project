@@ -83,39 +83,18 @@ response.dist <- sapply(1:length(aus), function(x){
   table(aus[,x])
 }) %>% t()
 
-aus[,10]
-
 #look at count for endorse (4+5) and deny (1+2)
 
 fa1<-fa(aus,nfactors=1,rotate = 'none',fm='pa', alpha = .05)
 
 #remove items with loadings <.3 on the first factor?
-remove <- which(fa1$loadings[,1] <= .30)
-# 13: I focus on my own mistakes more than what anyone else might have done
-# 14: I will do whatever I can to avoid getting angry
-# 15: It is hard for me to get angry even when other people think I should be
-# 16: I avoid situations that might anger me
-# 20: I wouldn’t leave a conversation just because someone is making me mad
-# 25: When other people do something rude or wrong, I just try not to think about it
-# 26: When I’m in the middle of a conflict, it’s very important to figure out exactly what I did wrong
-# 30: Feeling angry tends to be uncomfortable for me
-# 32: Almost any other emotion feels better to me than being angry
-# 40: Getting mad makes me feel overwhelmed
-# 42: Getting angry stresses me out
-# 43: Being mad makes me feel drained quickly
-# 44: It bothers me if I’m mad at someone else
-# 47: I’m not bothered by situations that might make me mad
-# 48: Anger doesn’t really stress me out
-# 49: I can handle being angry really well
-# 54: I'm more comfortable being upset with myself than mad at someone else
-# 69: Getting angry would just get in the way of my dealing with a problem
+remove <- which(fa1$loadings[,1] <= .40) #removed 22 items
+aus <- aus[-c(remove,67)] #also removing #67 because it is worded in a confusing mannner
+# and it loads in a direction opposite of the way it was intended
+item.content <- item.content[-c(remove,67),]
 
-# these removed items may represent a separate construct
-
-#aus <- select(aus, -c(all_of(remove)))
-aus <- aus[-c(remove)]
-#item.content <- item.content[-c(13,14,15,16,20,25,26,30,32,40,42,43,44,47,48,49,54,69),]
-item.content <- item.content[-c(remove),]
+fa1<-fa(aus,nfactors=1,rotate = 'none',fm='pa', alpha = .05)
+remove <- which(fa1$loadings[,1] <= .40) #no more items to remove
 
 #### ___2.2 Parallel analysis ------------
 parallel <- fa.parallel(aus, fm = 'pa', fa = 'both', n.iter = 1000)
@@ -134,7 +113,7 @@ data.frame('Factors' = (1:15),
 
 #### ___2.3 MAP analysis ------------
 map <- vss(aus, n = 10, rotate = 'promax', fm = 'pa')
-# MAP = 5 factors; BIC = 5 factors; holds for both oblique and orthogonal rotations
+# MAP = 4 factors; BIC = 4 factors
 
 #### ___2.4 Factor Analyses ------------
 #these all use regression to calculate factor scores
@@ -145,8 +124,7 @@ fa4<-fa(aus,nfactors=4,rotate = 'promax',fm='pa', alpha = .05)
 fa5<-fa(aus,nfactors=5,rotate = 'promax',fm='pa', alpha = .05)
 fa6<-fa(aus,nfactors=6,rotate = 'promax',fm='pa', alpha = .05)
 fa7<-fa(aus,nfactors=7,rotate = 'promax',fm='pa', alpha = .05)
-fa8<-fa(aus,nfactors=8,rotate = 'promax',fm='pa', alpha = .05)
-fa9<-fa(aus,nfactors=9,rotate = 'promax',fm='pa', alpha = .05)
+
 
 #### ______2.4.1 Fit and Variance Accounted for ------------
 compiled.fit <- data.frame(
@@ -157,10 +135,8 @@ compiled.fit <- data.frame(
     fa4$Vaccounted['Cumulative Var',4],
     fa5$Vaccounted['Cumulative Var',5],
     fa6$Vaccounted['Cumulative Var',6],
-    fa7$Vaccounted['Cumulative Var',7],
-    fa8$Vaccounted['Cumulative Var',8],
-    fa9$Vaccounted['Cumulative Var',9]
-  ),
+    fa7$Vaccounted['Cumulative Var',7]
+    ),
   rbind(
     fa1$RMSEA[1:3],
     fa2$RMSEA[1:3],
@@ -168,12 +144,10 @@ compiled.fit <- data.frame(
     fa4$RMSEA[1:3],
     fa5$RMSEA[1:3],
     fa6$RMSEA[1:3],
-    fa7$RMSEA[1:3],
-    fa8$RMSEA[1:3],
-    fa9$RMSEA[1:3]
+    fa7$RMSEA[1:3]
   ),
-  'MAP' = map$map[1:9],
-  'BIC' = map$vss.stats$BIC[1:9]
+  'MAP' = map$map[1:7],
+  'BIC' = map$vss.stats$BIC[1:7]
 )
 
 compiled.fit$VarDiff <- c(NA,
@@ -193,9 +167,7 @@ fastructuresdf<-data.frame(fa1$Structure[,1],
                            fa4$Structure[,1:4],
                            fa5$Structure[,1:5],
                            fa6$Structure[,1:6],
-                           fa7$Structure[,1:7],
-                           fa8$Structure[,1:8],
-                           fa9$Structure[,1:9])
+                           fa7$Structure[,1:7])
 
 names(fastructuresdf)<-c('fa1',
                          paste('fa2_',colnames(fa2$loadings),sep=''),
@@ -203,16 +175,14 @@ names(fastructuresdf)<-c('fa1',
                          paste('fa4_',colnames(fa4$loadings),sep=''),
                          paste('fa5_',colnames(fa5$loadings),sep=''),
                          paste('fa6_',colnames(fa6$loadings),sep=''),
-                         paste('fa7_',colnames(fa7$loadings),sep=''),
-                         paste('fa8_',colnames(fa8$loadings),sep=''),
-                         paste('fa9_',colnames(fa9$loadings),sep=''))
+                         paste('fa7_',colnames(fa7$loadings),sep=''))
 
 
 
 #fastructuresdf<-fastructuresdf[,c(order(names(fastructuresdf)))]
 #didn't want to reorder because it could result in confusion down the line
 #when comparing findings to those from R output
-names(fastructuresdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
+names(fastructuresdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7),sep = "")
 
 write.excel(data.frame(item.content, fastructuresdf), row.names = F, col.names = F)
 
@@ -223,9 +193,7 @@ faloadingsdf<-data.frame(fa1$loadings[,1],
                            fa4$loadings[,1:4],
                            fa5$loadings[,1:5],
                            fa6$loadings[,1:6],
-                           fa7$loadings[,1:7],
-                           fa8$loadings[,1:8],
-                           fa9$loadings[,1:9])
+                           fa7$loadings[,1:7])
 
 names(faloadingsdf)<-c('fa1',
                          paste('fa2_',colnames(fa2$loadings),sep=''),
@@ -233,16 +201,14 @@ names(faloadingsdf)<-c('fa1',
                          paste('fa4_',colnames(fa4$loadings),sep=''),
                          paste('fa5_',colnames(fa5$loadings),sep=''),
                          paste('fa6_',colnames(fa6$loadings),sep=''),
-                         paste('fa7_',colnames(fa7$loadings),sep=''),
-                         paste('fa8_',colnames(fa8$loadings),sep=''),
-                         paste('fa9_',colnames(fa9$loadings),sep=''))
+                         paste('fa7_',colnames(fa7$loadings),sep=''))
 
 
 
 #fastructuresdf<-fastructuresdf[,c(order(names(fastructuresdf)))]
 #didn't want to reorder because it could result in confusion down the line
 #when comparing findings to those from R output
-names(faloadingsdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
+names(faloadingsdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7),sep = "")
 
 write.excel(data.frame(item.content, faloadingsdf), row.names = F, col.names = F)
 
@@ -257,8 +223,6 @@ fa4$Phi %>% write.excel(row.names = F, col.names = F)
 fa5$Phi %>% write.excel(row.names = F, col.names = F)
 fa6$Phi %>% write.excel(row.names = F, col.names = F)
 fa7$Phi %>% write.excel(row.names = F, col.names = F)
-fa8$Phi %>% write.excel(row.names = F, col.names = F)
-fa9$Phi %>% write.excel(row.names = F, col.names = F)
 
 #### 3. Correlating factors with Criterions -------------------
 #### ___3.1 Factor scores ------------
@@ -268,9 +232,7 @@ fascoresdf<-data.frame(fa1$scores,
                        fa4$scores,
                        fa5$scores,
                        fa6$scores,
-                       fa7$scores,
-                       fa8$scores,
-                       fa9$scores)
+                       fa7$scores)
 
 
 names(fascoresdf)<-c('fa1',
@@ -279,13 +241,11 @@ names(fascoresdf)<-c('fa1',
                      paste('fa4_',colnames(fa4$scores),sep=''),
                      paste('fa5_',colnames(fa5$scores),sep=''),
                      paste('fa6_',colnames(fa6$scores),sep=''),
-                     paste('fa7_',colnames(fa7$scores),sep=''),
-                     paste('fa8_',colnames(fa8$scores),sep=''),
-                     paste('fa9_',colnames(fa9$scores),sep=''))
+                     paste('fa7_',colnames(fa7$scores),sep=''))
 
 ### Save and name factor scores
 #fascoresdf<-fascoresdf[,c(order(names(fascoresdf)))]
-names(fascoresdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
+names(fascoresdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7),sep = "")
 
 #### ___3.2 Correlations ------------
 
