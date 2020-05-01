@@ -75,25 +75,68 @@ df[paste('r_supps_',c(6,8,13,15),sep='')] %>% alpha #negative urgency = .85
 df[paste('r_supps_',c(3,10,17,20),sep='')] %>% alpha #positive urgency = .83
 df[paste('r_supps_',c(9,14,16,18),sep='')] %>% alpha #sensation seeking = .76
 
-#### 2. Factor Analyses: 5 to 7 factors -------------------
+#### 2. AUS analyses -------------------
 aus <- select(df, aus_1:aus_70)
-#### ___2.1 Parallel analysis ------------
+
+#### ___2.1 Item level analyses ------------
+response.dist <- sapply(1:length(aus), function(x){
+  table(aus[,x])
+}) %>% t()
+
+aus[,10]
+
+#look at count for endorse (4+5) and deny (1+2)
+
+fa1<-fa(aus,nfactors=1,rotate = 'none',fm='pa', alpha = .05)
+
+#remove items with loadings <.3 on the first factor?
+remove <- which(fa1$loadings[,1] <= .30)
+# 13: I focus on my own mistakes more than what anyone else might have done
+# 14: I will do whatever I can to avoid getting angry
+# 15: It is hard for me to get angry even when other people think I should be
+# 16: I avoid situations that might anger me
+# 20: I wouldn’t leave a conversation just because someone is making me mad
+# 25: When other people do something rude or wrong, I just try not to think about it
+# 26: When I’m in the middle of a conflict, it’s very important to figure out exactly what I did wrong
+# 30: Feeling angry tends to be uncomfortable for me
+# 32: Almost any other emotion feels better to me than being angry
+# 40: Getting mad makes me feel overwhelmed
+# 42: Getting angry stresses me out
+# 43: Being mad makes me feel drained quickly
+# 44: It bothers me if I’m mad at someone else
+# 47: I’m not bothered by situations that might make me mad
+# 48: Anger doesn’t really stress me out
+# 49: I can handle being angry really well
+# 54: I'm more comfortable being upset with myself than mad at someone else
+# 69: Getting angry would just get in the way of my dealing with a problem
+
+# these removed items may represent a separate construct
+
+#aus <- select(aus, -c(all_of(remove)))
+aus <- aus[-c(remove)]
+#item.content <- item.content[-c(13,14,15,16,20,25,26,30,32,40,42,43,44,47,48,49,54,69),]
+item.content <- item.content[-c(remove),]
+
+#### ___2.2 Parallel analysis ------------
 parallel <- fa.parallel(aus, fm = 'pa', fa = 'both', n.iter = 1000)
-#Parallel analysis suggests that the number of factors =  7  and the number of components =  5
+#Parallel analysis suggests that the number of factors =  6  and the number of components =  4
 
 data.frame('Factors' = (1:15),
            'Eigenvalues' = parallel$pc.values[1:15],
            'Sim_avg' = parallel$pc.sim[1:15],
-           'Sim_95' = sapply(141:155, function(x){
-             parallel$values[,x] %>% quantile(.95)
-           }),
-           'one' = rep(1,15)) # %>% write.excel(row.names = F)
+           'Sim_95' = (parallel$values %>% 
+             data.frame %>% 
+             select(CSim1:CSim15) %>% 
+             sapply(function(x){
+               quantile(x, .95)
+             })),
+           'one' = rep(1,15))  %>% write.excel(row.names = F, col.names = F)
 
-#### ___2.2 MAP analysis ------------
+#### ___2.3 MAP analysis ------------
 map <- vss(aus, n = 10, rotate = 'promax', fm = 'pa')
-# MAP = 7 factors; BIS = 6 factors
+# MAP = 5 factors; BIC = 5 factors; holds for both oblique and orthogonal rotations
 
-#### ___2.3 Factor Analyses ------------
+#### ___2.4 Factor Analyses ------------
 #these all use regression to calculate factor scores
 fa1<-fa(aus,nfactors=1,rotate = 'none',fm='pa', alpha = .05) 
 fa2<-fa(aus,nfactors=2,rotate = 'promax',fm='pa', alpha = .05)
@@ -105,7 +148,7 @@ fa7<-fa(aus,nfactors=7,rotate = 'promax',fm='pa', alpha = .05)
 fa8<-fa(aus,nfactors=8,rotate = 'promax',fm='pa', alpha = .05)
 fa9<-fa(aus,nfactors=9,rotate = 'promax',fm='pa', alpha = .05)
 
-#### ______2.3.1 Fit and Variance Accounted for ------------
+#### ______2.4.1 Fit and Variance Accounted for ------------
 compiled.fit <- data.frame(
   'VarAccounted' = rbind(
     fa1$Vaccounted['Proportion Var',],
@@ -139,10 +182,10 @@ compiled.fit$VarDiff <- c(NA,
             }))
 
 compiled.fit <- select(compiled.fit, VarAccounted, VarDiff, everything())
-compiled.fit %>% write.excel(row.names = F)
+compiled.fit %>% write.excel(row.names = F, col.names = F)
 
 
-#### ______2.3.2 Factor Loadings (Structure Matrix) ------------
+#### ______2.4.2 Factor Loadings (Structure Matrix) ------------
 # Structure loading matrix = pattern matrix X factor intercorrelation matrix)
 fastructuresdf<-data.frame(fa1$Structure[,1],
                            fa2$Structure[,1:2],
@@ -171,9 +214,9 @@ names(fastructuresdf)<-c('fa1',
 #when comparing findings to those from R output
 names(fastructuresdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
 
-write.excel(fastructuresdf, row.names = F, col.names = F)
+write.excel(data.frame(item.content, fastructuresdf), row.names = F, col.names = F)
 
-#### ______2.3.3 Factor Loadings (Pattern matrix) ------------
+#### ______2.4.3 Factor Loadings (Pattern matrix) ------------
 faloadingsdf<-data.frame(fa1$loadings[,1],
                            fa2$loadings[,1:2],
                            fa3$loadings[,1:3],
@@ -201,9 +244,9 @@ names(faloadingsdf)<-c('fa1',
 #when comparing findings to those from R output
 names(faloadingsdf)<-paste('F',c(1,2,2,3,3,3,rep(4,4),rep(5,5),rep(6,6),rep(7,7),rep(8,8),rep(9,9)),'.',c(1,1:2,1:3,1:4,1:5,1:6,1:7,1:8,1:9),sep = "")
 
-write.excel(faloadingsdf, row.names = F, col.names = F)
+write.excel(data.frame(item.content, faloadingsdf), row.names = F, col.names = F)
 
-#### ______2.3.4 Factor Correlations ------------
+#### ______2.4.4 Factor Correlations ------------
 
 #### Not sure the ordering is the same here - probably want to avoid reordering and just change the name to ensure no issues
 
@@ -253,7 +296,7 @@ data.frame(df[c('n',varlist(df,pattern = '^n_'),
                 'a',varlist(df,pattern = '^a_'),
                 'c',varlist(df,pattern = '^c_'))],
            fascoresdf) %>% 
-  r_table(., with = c(names(fascoresdf))) %>% .$cors %>% write.excel(.,row.names = T, col.names = T)
+  r_table(., with = c(names(fascoresdf))) %>% .$cors %>% write.excel(.,row.names = F, col.names = F)
 
 #### ______3.2.2 Other criteria  ------------
 data.frame(
@@ -267,4 +310,4 @@ data.frame(
          starts_with('supps.')),
   fascoresdf
 ) %>% 
-  r_table(., with = c(names(fascoresdf))) %>% .$cors %>% write.excel(.,row.names = T, col.names = T)
+  r_table(., with = c(names(fascoresdf))) %>% .$cors %>% write.excel(.,row.names = F, col.names = F)
