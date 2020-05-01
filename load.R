@@ -91,7 +91,7 @@ save(df, aus, item.content,
 load(here("output/clean data.RData"))
 
 save(parallel, map,
-     fa1, fa2, fa3, fa4, fa5, fa6, fa7, fa8, fa9,
+     fa1, fa2, fa3, fa4, fa5, fa6, fa7,
      fastructuresdf, faloadingsdf, fascoresdf,
      compiled.fit,
      file = here("output/fa results.RData"))
