@@ -80,9 +80,12 @@ workers <- workers %>% #do this to remove spaces from names
 
 # 6. Retest data ---------
 
-# 7. Save/load results files --------
-# ___7.1 Clean datasets -----
-save(df, aus, 
+# 7. Item content ---------
+item.content <- read_csv(here("doc/item content.csv"))
+
+# 8. Save/load results files --------
+# ___8.1 Clean datasets -----
+save(df, aus, item.content,
      file = here("output/clean data.RData"))
 
 load(here("output/clean data.RData"))
