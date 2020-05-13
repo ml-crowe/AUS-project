@@ -94,7 +94,15 @@ aus <- aus[-c(remove,67)] #also removing #67 because it is worded in a confusing
 item.content <- item.content[-c(remove,67),]
 
 fa1<-fa(aus,nfactors=1,rotate = 'none',fm='pa', alpha = .05)
-remove <- which(fa1$loadings[,1] <= .40) #no more items to remove
+which(fa1$loadings[,1] <= .40) #no more items to remove
+
+#remove additional items based on initial factor analysis
+remove.2 <- c(9, 53, 12, 24, 22, 35, 58, 68, 55, 37)
+aus <- select(aus, -paste('aus_', remove.2, sep =''))
+item.content <- item.content[-which(item.content$number %in% remove.2),]
+
+fa1<-fa(aus,nfactors=1,rotate = 'none',fm='pa', alpha = .05)
+which(fa1$loadings[,1] <= .40) #no additional items to remove
 
 #### ___2.2 Parallel analysis ------------
 parallel <- fa.parallel(aus, fm = 'pa', fa = 'both', n.iter = 1000)
@@ -214,7 +222,7 @@ write.excel(data.frame(item.content, faloadingsdf), row.names = F, col.names = F
 
 #### ______2.4.4 Factor Correlations ------------
 
-#### Not sure the ordering is the same here - probably want to avoid reordering and just change the name to ensure no issues
+#### avoided reordering and just changed the name to ensure no issues
 
 
 fa2$Phi %>% write.excel(row.names = F, col.names = F)
