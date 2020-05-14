@@ -9,6 +9,7 @@
   library(readr)
   library(lubridate)
   library(parallel)
+  library(mirt)
   library(here)
 }
 
@@ -373,38 +374,73 @@ fa.CFI<-function(x){
   return(nombre)
 }
 
-###### rIP function - not ready for use ########
-#https://github.com/MAHDLab/rIP
-#This is an R code project for detecting likely responsese from server farms on MTurk surveys.
-#
-#Takes as its input an array of IPs and the user's X-Key, passes these to iphub.info, and returns a dataframe with the ip (used for merging),
-#country code, country name, asn, isp, block, and hostname.
-#
-#Especially important in this is the variable "block", which gives a score indicating whether the IP address is likely from a server
-#farm and should be excluded from the data. It is codes 0 if the IP is residential/unclassified (i.e. safe IP),
-#1 if the IP is non-residential IP (hostping provider, proxy, etc. -- should likely be excluded), and 2 for non-residential and residential IPs
-#(more stringent, may flag innocent respondents).
-#
-#The recommendation from iphub.info is to block or exclude those who score block = 1.
-#
-#Credit to @tylerburleigh for pointing out the utility of iphub.info. His method for incorporating this information into Qualtrics
-#surveys can be found here: https://twitter.com/tylerburleigh/status/1042528912511848448?s=19.
+### IRT M2 function ####
+m2.stats <- function(model, factors, itemtype){
+  scores<-fscores(model,method='EAP',full.scores=TRUE,scores.only=TRUE) #EAP estimation method for the scores
+  fulldataframe<-imputeMissing(model,scores) #just imputing  the data one time
+  fmodel<-mirt(fulldataframe,factors,itemtype, technical = list(removeEmptyRows = TRUE)) #save imputed dataset
+  m2<-M2(fmodel) #save M2 statistics
+  return(m2)
+}
 
-# @export
+###### remove entirely missing rows from a dataframe ######
+remove.missing.rows <- function(df){
+  all.missing.rows <- which(apply(df,1,numNAs) == length(df))
+  cat('removed ', length(all.missing.rows), ' observations: ', all.missing.rows, "\n")
+  if(length(all.missing.rows) == 0){
+    new.df <- df
+    cat('returned original dataframe', '\n')
+  }
+  else{
+    new.df <- df[-c(all.missing.rows),]
+    cat('returned new dataframe', '\n')
+  }
+  list(df = new.df, old.df = df, missing.rows = all.missing.rows)
+}
 
-#getIPinfo <- function(ips, key) {
-#  options(stringsAsFactors = FALSE)
-#  url <- "http://v2.api.iphub.info/ip/"
-#  pb <- txtProgressBar(min = 0, max = length(ips), style = 3)
-#  ipDF <- c()
-#  for (i in 1:length(ips)) {
-#    ipInfo <- httr::GET(paste0(url, ips[i]), httr::add_headers(`X-Key` = key))
-#    infoVector <- unlist(httr::content(ipInfo))
-#    ipDF <- rbind(ipDF, infoVector)
-#    setTxtProgressBar(pb, i)
-#  }
-#  close(pb)
-#  ipDF <- data.frame(ipDF)
-#  rownames(ipDF) <- NULL
-#  return(ipDF)
+#### Paste IRT results into Modfit program - needs to be modified ####
+# I think we need to divide by the constant
+
+paste.modfit <- function(data, model.results){
+  cat('\n','Recoding data','\n')
+  min <- min(data, na.rm = T)
+  if(min != 0){
+    data <- data - min
+    cat('\n','Response values must start at 0','\n')
+    cat('\n','Subtracted ',min,' from data','\n')
+    cat('\n','Current minimum','\n')
+    print(apply(data, 2, min))
+    cat('\n','Current maximum','\n')
+    print(apply(data, 2, max))
+  }
+  if(numNAs(data)>0){
+    all.missing.rows <- which(apply(data,1,numNAs) == length(data))
+    if(length(all.missing.rows) > 0){
+      data <- remove.missing.rows(data)
+      data <- data$df
+    }
+    cat('\n','Recoded ',numNAs(data), ' missing data points to 9','\n')
+    data[is.na(data)] <- 9
+  }
+  cat('\n','Number of items: ', length(data),'\n')
+  cat('\n','Number of persons: ', nrow(data),'\n')
+  coefs <- coef(model.results, simplify=TRUE, IRTpars = T)
+  write.excel(coefs$items, row.names = F, col.names = F)
+  cat("\n","\bPaste item parameters","\n")
+  cat("\n","\bEnter 1 when complete","\n")
+  continue <- scan(n=1, what = numeric(0), quiet = T)
+  if(continue == 1){
+    write.excel(data, row.names = F, col.names = F)
+    cat("\n","\bPaste item responses","\n")
+  }
+}
+
+#critical.t <- function(){
+#  cat("\n","\bEnter Alpha Level","\n")
+#  alpha<-scan(n=1,what = double(0),quiet=T)
+#  cat("\n","\b1 Tailed or 2 Tailed:\nEnter either 1 or 2","\n")
+#  tt <- scan(n=1,what = double(0),quiet=T)
+#  cat("\n","\bEnter Number of Observations","\n")
+#  n <- scan(n=1,what = double(0),quiet=T)
+#  cat("\n\nCritical Value =",qt(1-(alpha/tt), n-2), "\n")
 #}
