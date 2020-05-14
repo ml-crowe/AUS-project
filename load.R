@@ -94,6 +94,8 @@ save(parallel, map,
      fa1, fa2, fa3, fa4, fa5, fa6, fa7,
      fastructuresdf, faloadingsdf, fascoresdf,
      compiled.fit,
+     aus.f1, aus.f2, aus.f3, aus.f4,
+     aus.f1.grm, aus.f2.grm, aus.f3.grm, aus.f4.grm,
      file = here("output/fa results.RData"))
 
 load(here("output/fa results.RData"))
