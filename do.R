@@ -279,3 +279,62 @@ data.frame(
   fascoresdf
 ) %>% 
   r_table(., with = c(names(fascoresdf))) %>% .$cors %>% write.excel(.,row.names = F, col.names = F)
+
+#### 4. Item response theory analyses -------------------
+aus.f1 <- select(aus, paste('aus_', c(1,2,18,3,6,5,52,4,28,11,27,33), sep = ''))
+aus.f2 <- select(aus, paste('aus_', c(65,34,39,29,31,64,41,56,36,38), sep = ''))
+aus.f3 <- select(aus, paste('aus_', c(61,50,46,59,23,51,21,60,62), sep = ''))
+aus.f4 <- select(aus, paste('aus_', c(17,8,10,7,63,66), sep = ''))
+#### ___4.1 GRM Estimation ------------
+#aus.grm <- irt(aus, 'graded', 4)
+#### ______4.1.1 Factor 1 ------------
+aus.f1.grm.model<-mirt(aus.f1,1,'graded', technical = list(removeEmptyRows = TRUE))
+aus.f1.m2 <-m2.stats(aus.f1.grm.model,1,'graded')
+aus.f1.coefs<-coef(aus.f1.grm.model, simplify=TRUE) #save item parameters
+aus.f1.items<-itemfit(aus.f1.grm.model,simplify=TRUE) #save item fit statistics
+aus.f1.grm <- list('model' = aus.f1.grm.model,
+                   'm2' = aus.f1.m2,
+                   'coefs' = aus.f1.coefs,
+                   'item.fit' = aus.f1.items)
+rm(aus.f1.grm.model,aus.f1.m2,aus.f1.coefs,aus.f1.items)
+
+#### ______4.1.2 Factor 2 ------------
+aus.f2.grm.model<-mirt(aus.f2,1,'graded', technical = list(removeEmptyRows = TRUE))
+aus.f2.m2 <-m2.stats(aus.f2.grm.model,1,'graded')
+aus.f2.coefs<-coef(aus.f2.grm.model, simplify=TRUE) #save item parameters
+aus.f2.items<-itemfit(aus.f2.grm.model,simplify=TRUE, na.rm = T) #save item fit statistics
+aus.f2.grm <- list('model' = aus.f2.grm.model,
+                   'm2' = aus.f2.m2,
+                   'coefs' = aus.f2.coefs,
+                   'item.fit' = aus.f2.items)
+rm(aus.f2.grm.model,aus.f2.m2,aus.f2.coefs,aus.f2.items)
+
+#### ______4.1.3 Factor 3 ------------
+aus.f3.grm.model<-mirt(aus.f3,1,'graded', technical = list(removeEmptyRows = TRUE))
+aus.f3.m2 <-m2.stats(aus.f3.grm.model,1,'graded')
+aus.f3.coefs<-coef(aus.f3.grm.model, simplify=TRUE) #save item parameters
+aus.f3.items<-itemfit(aus.f3.grm.model,simplify=TRUE, na.rm = T) #save item fit statistics
+aus.f3.grm <- list('model' = aus.f3.grm.model,
+                   'm2' = 'too frew degrees of freedom',
+                   'coefs' = aus.f3.coefs,
+                   'item.fit' = aus.f3.items)
+rm(aus.f3.grm.model,aus.f3.coefs,aus.f3.items)
+
+#### ______4.1.4 Factor 4 ------------
+aus.f4.grm.model<-mirt(aus.f4,1,'graded', technical = list(removeEmptyRows = TRUE))
+aus.f4.m2 <-m2.stats(aus.f4.grm.model,1,'graded')
+aus.f4.coefs<-coef(aus.f4.grm.model, simplify=TRUE) #save item parameters
+aus.f4.items<-itemfit(aus.f4.grm.model,simplify=TRUE, na.rm = T) #save item fit statistics
+aus.f4.grm <- list('model' = aus.f4.grm.model,
+                   'm2' = 'too frew degrees of freedom',
+                   'coefs' = aus.f4.coefs,
+                   'item.fit' = aus.f4.items)
+rm(aus.f4.grm.model,aus.f4.coefs,aus.f4.items)
+
+#### ______4.1.5 Absolute Model fit -----
+paste.modfit(aus.f2,aus.f2.grm$model)
+
+#### ___4.2 GGUM Estimation ------------
+
+#### ______4.1.1 Factor 1 ------------
+aus.f1.ggum.model<-mirt(aus.f1,1,'ggum', technical = list(removeEmptyRows = TRUE)) #unstable - didn't converge after 500 iterations
