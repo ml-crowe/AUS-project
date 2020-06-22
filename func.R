@@ -1,6 +1,7 @@
 ##### Function to automatically load packages i use regularly ######
 .First <- function(x){
   library(MASS)
+  library(mokken)
   library(tidyverse)
   library(magrittr)
   library(Hmisc)
@@ -375,8 +376,8 @@ fa.CFI<-function(x){
 }
 
 ### IRT M2 function ####
-m2.stats <- function(model, factors, itemtype){
-  scores<-fscores(model,method='EAP',full.scores=TRUE,scores.only=TRUE) #EAP estimation method for the scores
+m2.stats <- function(model, factors, itemtype, QMC = F){
+  scores<-fscores(model,method='EAP',full.scores=TRUE,scores.only=TRUE, QMC = QMC) #EAP estimation method for the scores
   fulldataframe<-imputeMissing(model,scores) #just imputing  the data one time
   fmodel<-mirt(fulldataframe,factors,itemtype, technical = list(removeEmptyRows = TRUE)) #save imputed dataset
   m2<-M2(fmodel) #save M2 statistics
@@ -425,8 +426,10 @@ paste.modfit <- function(data, model.results){
   cat('\n','Number of items: ', length(data),'\n')
   cat('\n','Number of persons: ', nrow(data),'\n')
   coefs <- coef(model.results, simplify=TRUE, IRTpars = T)
+  coefs$items[,'a'] <- coefs$items[,'a']/1.702
   write.excel(coefs$items, row.names = F, col.names = F)
   cat("\n","\bPaste item parameters","\n")
+  cat("\n","\bCoef a divided by constant 1.702","\n")
   cat("\n","\bEnter 1 when complete","\n")
   continue <- scan(n=1, what = numeric(0), quiet = T)
   if(continue == 1){
@@ -434,6 +437,24 @@ paste.modfit <- function(data, model.results){
     cat("\n","\bPaste item responses","\n")
   }
 }
+
+# Identify overlapping items #####
+#pulled from previous project
+make.nar_cors <- function(full.df, cut){
+  nar_cors <- r_table(full.df)$cors %>% as.matrix
+  nar_cors[upper.tri(nar_cors, diag = TRUE)] <- NA
+  nar_cors <- data.frame(nar_cors)
+  nar_cors[,
+           sapply(nar_cors,function(x){which(x>= cut)}, simplify = TRUE) %>%
+             sapply(length) %>%
+             equals(0) %>%
+             which() %>%
+             names %>% c()
+           ] <- NULL
+  return(nar_cors)
+}
+
+
 
 #critical.t <- function(){
 #  cat("\n","\bEnter Alpha Level","\n")
